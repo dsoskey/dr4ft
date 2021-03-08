@@ -7,7 +7,7 @@ const CopyWebpackPlugin = require("copy-webpack-plugin");
 module.exports = {
   entry: {
     polyfill: "@babel/polyfill",
-    app: "./frontend/src/init.js"
+    app: "./frontend/src/init.ts"
   },
   output: {
     path: path.join(__dirname, "./built"),
@@ -36,7 +36,7 @@ module.exports = {
     })
   ],
   resolve: {
-    extensions: [".js", ".jsx", ".css", ".less"],
+    extensions: [".tsx", ".ts", ".js", ".jsx", ".css", ".less"],
   },
   optimization: {
     splitChunks: {
@@ -46,6 +46,17 @@ module.exports = {
   },
   module: {
     rules: [
+      {
+        test: /\.(ts|tsx)$/,
+        exclude: [
+          /node_modules/,
+          /\.spec\.(ts|mts)$/,
+          /backend/,
+        ],
+        use: {
+          loader: 'ts-loader',
+        },
+      },
       {
         test: /\.(js|jsx)$/,
         exclude: [

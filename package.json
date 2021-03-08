@@ -2,13 +2,17 @@
   "name": "draft",
   "version": "1.1.1",
   "description": "game client/server",
-  "homepage": "https://github.com/dr4fters/dr4ft",
+  "homepage": "https://github.com/dsoskey/dr4ft",
   "bugs": {
     "url": "https://github.com/dr4fters/dr4ft/issues"
   },
   "license": "MIT",
   "author": "Dr4fters Team <zach@dr4ft.info>",
   "contributors": [
+    {
+      "name": "Dan Soskey",
+      "email": "asks+dr4ft@danielsoskey.com"
+    },
     {
       "name": "Zach Halpern",
       "email": "zach@dr4ft.info"
@@ -27,6 +31,7 @@
     "start-dev": "npm run watch & npm run nodemon",
     "start-debug": "npm run watch & npm run nodemon:debug",
     "build": "webpack --config webpack.prod.js",
+    "buildBackend": "tsc --project bsconfig.json",
     "watch": "webpack --config webpack.dev.js --watch -d --display-error-details",
     "nodemon": "nodemon ./app.js -e html,js --ignore built --ignore frontend",
     "nodemon:debug": "nodemon --inspect-brk=1338 ./app.js -e html,js --ignore built --ignore frontend",
@@ -90,6 +95,11 @@
   },
   "devDependencies": {
     "@babel/register": "^7.12.13",
+    "@types/dompurify": "^2.2.1",
+    "@types/engine.io-client": "^3.1.4",
+    "@types/lodash": "^4.14.168",
+    "@types/react": "^17.0.2",
+    "@types/react-dom": "^17.0.1",
     "babel-eslint": "10.1.0",
     "clean-webpack-plugin": "3.0.0",
     "copy-webpack-plugin": "6.4.1",
@@ -106,6 +116,8 @@
     "sass": "^1.32.7",
     "sass-loader": "^10.1.1",
     "style-loader": "1.2.1",
+    "ts-loader": "^8.0.17",
+    "typescript": "^4.2.2",
     "webpack-cli": "3.3.12"
   },
   "engines": {

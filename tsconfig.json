@@ -1,0 +1,18 @@
+{
+    "compilerOptions": {
+        "jsx": "react",
+        "strict": true,
+        "allowJs": true,
+        "module": "CommonJS",
+        "esModuleInterop": true,
+        "removeComments": true,
+        "lib": ["ESNext", "DOM"],
+        "sourceMap": true,
+        "baseUrl": ".",
+        "paths": {
+            "common": ["common/src/*"]
+        }
+    },
+    "include": ["frontend/src/**/*", "common/src/**/*"],
+    "exclude": ["node_modules"]
+}
