@@ -1,28 +1,91 @@
-const fs = require("fs");
-const _ = require("lodash");
-const path = require("path");
-const readFile = (path) => JSON.parse(fs.readFileSync(path, "UTF-8"));
-const { keyCardsUuidByNumber, groupCardsBySet, groupCardsByName } = require("./import/keyCards");
+import { Card } from '../common/src/types/card';
+import fs from 'fs';
+import _ from 'lodash';
+import path from 'path';
+const readFile = (path: string) => JSON.parse(fs.readFileSync(path, 'UTF-8'));
+import { keyCardsUuidByNumber, groupCardsBySet, groupCardsByName } from './import/keyCards';
 
-const DATA_DIR = "data";
-const DRAFT_STATS_DIR = "draftStats";
-const CARDS_PATH = "cards.json";
-const CUBABLE_CARDS_PATH = "cubable_cards_by_name.json";
-const SETS_PATH = "sets.json";
-const BOOSTER_RULES_PATH = "boosterRules.json";
+const DATA_DIR = 'data';
+const DRAFT_STATS_DIR = 'draftStats';
+const CARDS_PATH = 'cards.json';
+const CUBABLE_CARDS_PATH = 'cubable_cards_by_name.json';
+const SETS_PATH = 'sets.json';
+const BOOSTER_RULES_PATH = 'boosterRules.json';
 
-let cards, cubableCardsByName, sets, playableSets, latestSet, boosterRules;
+export interface MtgSet {
+  code: string;
+  type: string; // TODO: enum
+  name: string;
+  releaseDate: string;
+  baseSetSize: number;
+  size: number;
+  cardsByNumber: SetNumToID;
+  Basic?: string[];
+  Common?: string[]
+  Uncommon?: string[];
+  Rare?: string[];
+  Mythic?: string[];
+}
 
-const getDataDir = () => {
+type SetMap = { [setCode: string]: MtgSet };
+
+
+interface SetCodeToSetNum {
+  [setCode: string]: SetNumToID;
+}
+export interface SetNumToID {
+  [setNum: string]: string;
+}
+// TODO: Add this to my typescript learnings book
+/**
+ * Type intersection can be used to add fields to an index type
+ */
+type HasDefault<T> = T & { default: string; };
+interface CubableCardsByName { 
+  [cardName: string]: HasDefault<SetCodeToSetNum>;
+}
+
+type CardMap = { [uuid: string]: Card };
+
+interface BoosterVariant {
+  sheets: { [sheetName: string]: number };
+  weight: number;
+}
+export interface Sheet {
+  balance_colors: boolean;
+  totalWeight: number;
+  cards: { [uuid: string]: number };
+  cardsByColor: { [colorName: string]: string[] };
+}
+export interface BoosterRule {
+  boosters: BoosterVariant[];
+  totalWeight: number;
+  sheets: { [sheetName: string]: Sheet };
+}
+
+interface BoosterRuleMap {
+  [setCode: string]: BoosterRule;
+}
+type HasRepoHash<T> = T & { repoHash: string; }
+
+let
+ jawns: CardMap | null, // cards
+ cubableCardsByName: CubableCardsByName | null,
+ sheds: SetMap | null, // sets
+ playableSets: { [setType: string]: MtgSet[] } | null,
+ latestSet: MtgSet | null,
+ boosterRules: HasRepoHash<BoosterRuleMap> | null;
+
+export const getDataDir = (): string => {
   const repoRoot = process.cwd();
   const dataDir = path.join(repoRoot, DATA_DIR);
   return dataDir;
 };
 
-const reloadData = (filename) => {
+export const reloadData = (filename: string) => {
   switch (filename) {
   case CARDS_PATH: {
-    cards = null;
+    jawns = null;
     break;
   }
   case CUBABLE_CARDS_PATH: {
@@ -30,7 +93,7 @@ const reloadData = (filename) => {
     break;
   }
   case SETS_PATH: {
-    sets = null;
+    sheds = null;
     playableSets = null;
     latestSet = null;
     break;
@@ -42,58 +105,58 @@ const reloadData = (filename) => {
   }
 };
 
-const getSets = () => {
-  if (!sets) {
-    sets = readFile(`${getDataDir()}/${SETS_PATH}`);
+export const getSets = (): SetMap => {
+  if (!sheds) {
+    sheds = readFile(`${getDataDir()}/${SETS_PATH}`);
   }
-  return sets;
+  return sheds!;
 };
 
-const getSet = (setCode) => getSets()[setCode];
+export const getSet = (setCode: string) => getSets()[setCode];
 
-const getCards = () => {
-  if (!cards) {
-    cards = readFile(`${getDataDir()}/${CARDS_PATH}`);
+const getCards = (): { [uuid: string]: Card } => {
+  if (!jawns) {
+    jawns = readFile(`${getDataDir()}/${CARDS_PATH}`);
   }
-  return cards;
+  return jawns!;
 };
 
-const mergeCardsTogether = (oldCards, newCards) => ({
+const mergeCardsTogether = (oldCards: CardMap, newCards: CardMap) => ({
   ...oldCards,
   ...newCards
 });
 
 //TODO: someone should handle this? Maybe a service?
-const saveSetAndCards = ({set: newSet, cards: newCards}) => {
-  saveSetsAndCards({
-    ...sets,
-    [newSet.code]: newSet
-  }, mergeCardsTogether(getCards(), newCards));
+export const saveSetAndCards = ({set: newSet, cards: newCards}: any) => {
+  saveSetsAndCards(
+    { ...sheds, [newSet.code]: newSet },
+    mergeCardsTogether(getCards(), newCards),
+  );
 };
 
-const saveSetsAndCards = (allSets, allCards) => {
+const saveSetsAndCards = (allSets: SetMap, allCards: CardMap) => {
   writeSets(allSets);
   writeCards(allCards);
   writeCubeCards(allSets, allCards);
 };
 
-const getCardByUuid = (uuid) => {
+export const getCardByUuid = (uuid: string) => {
   return getCards()[uuid];
 };
 
-const parseCubableCardName = (cardName) => {
+const parseCubableCardName = (cardName: string) => {
   // Cube cards can be written as:
   //
-  // * "Abrade" (just card name)
-  // * "Abrade (CMR)" (card name + set code)
-  // * "Abrade (CMR 410)" (card name + set code + number within set)
+  // * 'Abrade' (just card name)
+  // * 'Abrade (CMR)' (card name + set code)
+  // * 'Abrade (CMR 410)' (card name + set code + number within set)
   const match = cardName.match(/^(.*?)(?: +\((\w+)(?: +(\w+))?\))? *$/);
   if (!match) return null;
 
   return {name: match[1], set: match[2], number: match[3]};
 };
 
-const getCubableCardUuidByName = (cardName) => {
+const getCubableCardUuidByName = (cardName: string): string | null => {
   if (!cubableCardsByName) {
     cubableCardsByName = readFile(`${getDataDir()}/${CUBABLE_CARDS_PATH}`);
   }
@@ -101,7 +164,7 @@ const getCubableCardUuidByName = (cardName) => {
   const card = parseCubableCardName(cardName);
   if (!card) return null;
 
-  const options = cubableCardsByName[card.name];
+  const options = cubableCardsByName![card.name];
   if (!options) return null;
   if (!card.set) return options.default;
 
@@ -112,15 +175,16 @@ const getCubableCardUuidByName = (cardName) => {
   return byNumber[Object.keys(byNumber).sort()[0]];
 };
 
-const getCubableCardByName = (cardName) => {
-  return getCardByUuid(getCubableCardUuidByName(cardName));
+export const getCubableCardByName = (cardName: string) => {
+
+  return getCardByUuid(getCubableCardUuidByName(cardName)!);
 };
 
-const writeCards = (newCards) => {
+const writeCards = (newCards: any) => {
   fs.writeFileSync(`${getDataDir()}/${CARDS_PATH}`, JSON.stringify(newCards, undefined, undefined));
 };
 
-const sortByPriority = allSets => (card1, card2) => {
+const sortByPriority = (allSets: SetMap) => (card1: Card, card2: Card) => {
   const set1 = allSets[card1.setCode];
   const set2 = allSets[card2.setCode];
 
@@ -137,22 +201,22 @@ const sortByPriority = allSets => (card1, card2) => {
   return 0;
 };
 
-const writeCubeCards = (allSets, allCards) => {
+const writeCubeCards = (allSets: SetMap, allCards: CardMap) => {
   const groupedCards = groupCardsByName(Object.values(allCards));
   const groupedCardsArray = Object.values(groupedCards);
   const mySort = sortByPriority(allSets);
-  groupedCardsArray.forEach((cards) => {
+  groupedCardsArray.forEach((cards: any) => {
     cards.sort(mySort);
   });
 
   // Group cubable cards so they're easy to look up. A single card ends up
   // looking like:
   //
-  // "abrade": {
-  //     "default": "4b921a1e-853d-50f7-9d76-d7f107c6c7e3",
-  //     "cmr": {
-  //         "410": "7aad9d6f-4cef-5e79-a2c2-2491ae3a5498",
-  //         "659": "5f43d620-b3a9-5f52-a6ce-325d63199131"
+  // 'abrade': {
+  //     'default': '4b921a1e-853d-50f7-9d76-d7f107c6c7e3',
+  //     'cmr': {
+  //         '410': '7aad9d6f-4cef-5e79-a2c2-2491ae3a5498',
+  //         '659': '5f43d620-b3a9-5f52-a6ce-325d63199131'
   //     },
   //     ...
   // }
@@ -160,7 +224,7 @@ const writeCubeCards = (allSets, allCards) => {
   // Split cards are listed multiple times, once for their combined name and
   // once each for each half of the split name.
   const cubableCards = groupedCardsArray
-    .map((cards) => {
+    .map((cards: any) => {
       return [cards[0].name.toLowerCase(), {
         default: cards[0].uuid,
         ..._.mapValues(groupCardsBySet(cards), keyCardsUuidByNumber)
@@ -173,17 +237,17 @@ const writeCubeCards = (allSets, allCards) => {
         - Ice
     */
     .flatMap(([cardName, cardValues]) => {
-      const names = cardName.split(" // ");
+      const names = cardName.split(' // ');
       if (names.length <= 1) return [[cardName, cardValues]];
 
       return [
         [cardName, cardValues],
-        ...names.map((name) => [name, cardValues])
+        ...names.map((name: string) => [name, cardValues])
       ];
     })
     /* It may happen that double cards have side's name clashing with other double cards names.
-      E.g. "fire" name may clash with Fire // Ice and Start // Fire.
-      To understand which is the true "default", we sort the cards by priority and choose the first one.
+      E.g. 'fire' name may clash with Fire // Ice and Start // Fire.
+      To understand which is the true 'default', we sort the cards by priority and choose the first one.
     */
     .reduce((cubableCards, [cardName, cardValues]) => {
       if (!cubableCards[cardName]) {
@@ -204,11 +268,11 @@ const writeCubeCards = (allSets, allCards) => {
   fs.writeFileSync(`${getDataDir()}/${CUBABLE_CARDS_PATH}`, JSON.stringify(cubableCards, undefined, 4));
 };
 
-const writeSets = (newSets) => {
+const writeSets = (newSets: any) => {
   fs.writeFileSync(`${getDataDir()}/${SETS_PATH}`, JSON.stringify(newSets, undefined, 4));
 };
 
-const getPlayableSets = () => {
+export const getPlayableSets = () => {
   if (playableSets) {
     return playableSets;
   }
@@ -216,43 +280,44 @@ const getPlayableSets = () => {
 
   const AllSets = getSets();
   for (let code in AllSets) {
-    const { type, name, releaseDate } = AllSets[code];
+    const set = AllSets[code];
+    const { type, name, releaseDate } = set;
 
     //We do not want to play with these types of set
-    if (!["core", "draft_innovation", "expansion", "funny", "starter", "masters", "custom"].includes(type)) {
+    if (!['core', 'draft_innovation', 'expansion', 'funny', 'starter', 'masters', 'custom'].includes(type)) {
       continue;
     }
 
     if (isReleasedExpansionOrCoreSet(type, releaseDate)) {
       if (!latestSet) {
-        latestSet = { code, type, name, releaseDate };
+        latestSet = set;
       } else if (new Date(releaseDate).getTime() > new Date(latestSet.releaseDate).getTime()) {
-        latestSet = { code, type, name, releaseDate };
+        latestSet = set;
       }
     }
 
     if (!playableSets[type]) {
-      playableSets[type] = [{ code, name, releaseDate }];
+      playableSets[type] = [set];
     } else {
-      playableSets[type].push({ code, name, releaseDate });
+      playableSets[type].push(set);
     }
   }
 
   //Add random possibility
-  playableSets["random"] = [{ code: "RNG", name: "Random Set" }];
+  // playableSets['random'] = [{ code: 'RNG', name: 'Random Set', releaseDate: '', type: 'random' }];
 
   // sort all keys depending on releaseDate
   for (let type in playableSets) {
     playableSets[type].sort((a, b) => {
-      return Number(b.releaseDate.replace(/-/g, "")) - Number(a.releaseDate.replace(/-/g, ""));
+      return Number(b.releaseDate.replace(/-/g, '')) - Number(a.releaseDate.replace(/-/g, ''));
     });
   }
 
   return playableSets;
 };
 
-const SET_TYPES_EXCLUDED_FROM_RANDOM_SET = new Set(["custom", "funny", "draft_innovation", "starter", "random"]);
-const getRandomSet = () => {
+const SET_TYPES_EXCLUDED_FROM_RANDOM_SET = new Set(['custom', 'funny', 'draft_innovation', 'starter', 'random']);
+export const getRandomSet = () => {
   const allSets = getPlayableSets();
   const allTypes = Object.keys(allSets)
     .filter(setType => !SET_TYPES_EXCLUDED_FROM_RANDOM_SET.has(setType));
@@ -263,19 +328,19 @@ const getRandomSet = () => {
   return randomSets[randomSets.length * Math.random() << 0];
 };
 
-const getLatestReleasedSet = () => {
+export const getLatestReleasedSet = () => {
   if (!latestSet) {
     getPlayableSets();
   }
   return latestSet;
 };
 
-const getExpansionOrCoreModernSets = () => {
+export const getExpansionOrCoreModernSets = () => {
   const sets = [];
   for (const setCode in getSets()) {
     const set = getSets()[setCode];
     if (isReleasedExpansionOrCoreSet(set.type, set.releaseDate)
-      && Date.parse("2003-07-26") <= Date.parse(set.releaseDate)) {
+      && Date.parse('2003-07-26') <= Date.parse(set.releaseDate)) {
       set.code = setCode;
       sets.push(set);
     }
@@ -283,7 +348,7 @@ const getExpansionOrCoreModernSets = () => {
   return sets;
 };
 
-const getExansionOrCoreSets = () => {
+export const getExansionOrCoreSets = () => {
   const sets = [];
   for (const setCode in getSets()) {
     const set = getSets()[setCode];
@@ -295,12 +360,12 @@ const getExansionOrCoreSets = () => {
   return sets;
 };
 
-const isReleasedExpansionOrCoreSet = (type, releaseDate) => (
-  ["expansion", "core"].includes(type) &&
-  Date.parse(releaseDate) <= new Date()
+const isReleasedExpansionOrCoreSet = (type: string, releaseDate: string) => (
+  ['expansion', 'core'].includes(type) &&
+  Date.parse(releaseDate) <= Date.now()
 );
 
-function saveDraftStats(id, stats) {
+export function saveDraftStats(id: string, stats: any) {
   if (!fs.existsSync(`${getDataDir()}/${DRAFT_STATS_DIR}`)) {
     fs.mkdirSync(`${getDataDir()}/${DRAFT_STATS_DIR}`);
   }
@@ -308,46 +373,24 @@ function saveDraftStats(id, stats) {
   fs.writeFileSync(`${getDataDir()}/${DRAFT_STATS_DIR}/${id}.json`, JSON.stringify(stats, undefined, 4));
 }
 
-const getBoosterRules = (setCode) => {
+export const getBoosterRules = (setCode: string): BoosterRule => {
   if (!boosterRules) {
     boosterRules = readFile(`${getDataDir()}/${BOOSTER_RULES_PATH}`);
   }
-  return boosterRules[setCode];
+  return boosterRules![setCode];
 };
 
-const getBoosterRulesVersion = () => {
+export const getBoosterRulesVersion = (): string => {
   if (!boosterRules) {
     try {
       boosterRules = readFile(`${getDataDir()}/${BOOSTER_RULES_PATH}`);
     } catch(error) {
-      return "";
+      return '';
     }
   }
-  return boosterRules.repoHash;
+  return boosterRules!.repoHash;
 };
 
-const saveBoosterRules = (boosterRules) => {
+const saveBoosterRules = (boosterRules: any) => {
   fs.writeFileSync(`${getDataDir()}/${BOOSTER_RULES_PATH}`, JSON.stringify(boosterRules, undefined, 4));
-};
-
-module.exports = {
-  getDataDir,
-  getCards,
-  getSets,
-  getSet,
-  getPlayableSets,
-  getRandomSet,
-  getLatestReleasedSet,
-  getExpansionOrCoreModernSets,
-  getExansionOrCoreSets,
-  saveSetAndCards,
-  saveSetsAndCards,
-  saveDraftStats,
-  mergeCardsTogether,
-  getCardByUuid,
-  getCardByName: getCubableCardByName,
-  reloadData,
-  getBoosterRules,
-  getBoosterRulesVersion,
-  saveBoosterRules
 };

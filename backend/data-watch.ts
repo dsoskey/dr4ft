@@ -1,6 +1,6 @@
-const fs = require("fs");
-const {reloadData} = require("./data");
-const logger = require("./logger");
+import fs from "fs";
+import { reloadData } from "./data";
+import { logger } from "./logger";
 
 /**
  * Add a watch on fs to get updated even from external process

@@ -21,7 +21,7 @@ export const Set = ({ index, selectedSet, type }: SetProps) => {
     <div>
       {/* TODO pull down set icons */}
       <select value={selectedSet} onChange={onSetChange} key={index}>
-        <SetChoices />
+        {SetChoices()}
       </select>
     </div>
   );

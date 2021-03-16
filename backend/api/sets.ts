@@ -1,12 +1,12 @@
-const fs = require("fs");
-const express = require("express");
+import fs from "fs";
+import express from "express";
 const setsRouter = express.Router();
-const { getSets, saveSetAndCards } = require("../data");
-const doSet = require("../import/doSet");
-const logger = require("../logger");
-const parser = require("../import/xml/parser");
-const path = require("path");
-const {getDataDir} = require("../data");
+import { getSets, saveSetAndCards } from "../data";
+import { doSet } from "../import/doSet";
+import { logger } from "../logger";
+import parser from "../import/xml/parser";
+import path from "path";
+import { getDataDir } from "../data";
 
 const customDataDir = path.join(getDataDir(), "custom");
 if (!fs.existsSync(customDataDir)) {
@@ -16,14 +16,14 @@ if (!fs.existsSync(customDataDir)) {
 const CUSTOM_TYPE = "custom";
 
 setsRouter
-  .post("/upload", (req, res) => {
+  .post("/upload", (req: any, res: any) => {
     let file = req.files.filepond;
     const content = file.data.toString();
 
     if (/\.xml$/.test(file.name)) {
       try {
         Object.values(parser.parse(content)).forEach(json => {
-          integrateJson(json, res);
+          integrateJson(json); // used to have res
         });
       } catch(err) {
         logger.error(`Could not parse XML file: ${err} - ${err.stack}`);
@@ -33,7 +33,7 @@ setsRouter
     } else if( /\.json/.test(file.name)) {
       try {
         const json = JSON.parse(content);
-        integrateJson(json, res);
+        integrateJson(json); // used to have res
       } catch (err) {
         logger.error(`Could not parse JSON file because ${err} - ${err.stack}`);
         res.status(400).json(`the json submitted is not valid: ${err.message}`);
@@ -46,7 +46,7 @@ setsRouter
  * Utility to delete unwanted attributes before saving the set
  * @param {JSON} json
  */
-const sanitize = (json) => {
+const sanitize = (json: any) => {
   json.type = CUSTOM_TYPE; //Force set as custom
   json.cards = json.cards.map(({ //take only values that we need
     name,
@@ -68,7 +68,7 @@ const sanitize = (json) => {
     toughness,
     loyalty,
     text
-  }
+  }: any
   ) => ({
     name,
     frameEffects,
@@ -92,7 +92,7 @@ const sanitize = (json) => {
   }));
 } ;
 
-function integrateJson(json) {
+function integrateJson(json: any) {
   if(!json.code) {
     throw new Error("Custom set should have a code");
   }
@@ -128,4 +128,4 @@ function integrateJson(json) {
   });
 }
 
-module.exports = setsRouter;
+export default setsRouter;

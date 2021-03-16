@@ -1,4 +1,4 @@
-const joi = require("@hapi/joi");
+import joi from "@hapi/joi";
 
 const envVarsSchema = joi.object({
   LOGGER_LEVEL: joi.string()
@@ -30,7 +30,7 @@ if (error) {
   throw new Error(`Config validation error: ${error.message}`);
 }
 
-const config = {
+export const logger = {
   level: envVars.LOGGER_LEVEL,
   file: {
     enabled: envVars.LOGGER_FILE_ENABLED,
@@ -40,5 +40,3 @@ const config = {
   },
   consoleEnabled: envVars.LOGGER_CONSOLE_ENABLED,
 };
-
-module.exports = config;

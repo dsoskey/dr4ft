@@ -1,5 +1,7 @@
-const schedule = require("node-schedule");
-const rooms = {};
+import schedule from "node-schedule";
+import { Game } from "./game";
+
+const rooms: { [key: string]: Game } = {};
 
 schedule.scheduleJob("0 * * * * *", () => {
   const now = Date.now();
@@ -24,9 +26,9 @@ schedule.scheduleJob("* * * * * *", () => {
     });
 });
 
-module.exports = {
-  add: (roomId, room) => rooms[roomId] = room,
-  get: roomId => rooms[roomId],
-  delete: (roomId) => delete rooms[roomId],
+export default {
+  add: (roomId: string, room: Game) => rooms[roomId] = room,
+  get: (roomId: string) => rooms[roomId],
+  delete: (roomId: string) => delete rooms[roomId],
   getAll: () => Object.values(rooms)
 };

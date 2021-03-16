@@ -9,10 +9,20 @@
         "lib": ["ESNext", "DOM"],
         "sourceMap": true,
         "baseUrl": ".",
+        "downlevelIteration": true,
         "paths": {
             "common": ["common/src/*"]
         }
     },
-    "include": ["frontend/src/**/*", "common/src/**/*"],
+    "include": [
+        "common/src/**/*",
+
+        "frontend/src/**/*",
+        
+        "app.ts",
+        "backend/src/**/*", 
+        "config/src/**/*", 
+        "scripts/**/*"
+    ],
     "exclude": ["node_modules"]
 }

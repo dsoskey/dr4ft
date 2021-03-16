@@ -1,3 +1,4 @@
+import { Dictionary } from "lodash";
 import { Card } from "./card";
 
 export interface DeckRow {
@@ -6,7 +7,8 @@ export interface DeckRow {
     sideboard: boolean;
 }
 
-export interface Deck {
-    side: DeckRow[];
-    main: DeckRow[];
+
+export interface Deck<ZoneRep = DeckRow[]> {
+    side: ZoneRep;
+    main: ZoneRep;
 }

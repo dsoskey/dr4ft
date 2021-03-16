@@ -9,10 +9,8 @@ import { Zone } from './zones';
 import { ExportFormat } from 'common/src/types/export';
 import { Message } from 'common/src/types/message';
 import { Log } from 'common/src/types/log';
+import { TimerLength } from 'common/src/types/state';
 
-
-
-export type TimerLength = 'Fast' | 'Moderate' | 'Slow' | 'Leisurely';
 export type SetType = "setsDraft" | "setsSealed" | "setsDecadentDraft";
 export type SortType = "cmc" | "color" | "rarity" | "type";
 export interface MTGJsonVersion {

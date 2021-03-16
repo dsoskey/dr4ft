@@ -1,6 +1,3 @@
-/* eslint no-console: "off" */
-"use strict";
-
 const execSync = require("child_process").execSync;
 
 let versionInfo = "noVersion";
@@ -13,7 +10,7 @@ try {
 
 const versionInfoParts = versionInfo.split("-");
 
-const VERSION =
+export const version =
   versionInfoParts.length === 3
 
   // Show the number of commits past the most recent tag, and the commit hash
@@ -25,5 +22,3 @@ const VERSION =
 
     // If there is no tag, just display the commit hash.
     : versionInfo;
-
-module.exports = VERSION;

@@ -1,4 +1,4 @@
-const joi = require("@hapi/joi");
+import joi from "@hapi/joi";
 
 const envVarsSchema = joi.object({
   PORT: joi.number()
@@ -14,4 +14,5 @@ const { error, value: envVars } = envVarsSchema.validate(process.env);
 if (error) {
   throw new Error(`Config validation error: ${error.message}`);
 }
-module.exports = envVars;
+
+export const app = envVars;

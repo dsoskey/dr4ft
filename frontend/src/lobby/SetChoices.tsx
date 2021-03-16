@@ -18,5 +18,5 @@ export const SetChoices = () => {
       <optgroup label={toTitleCase(setType, "_")} key={setType}>{options}</optgroup>
     );
   }
-  return (<>groups</>);
+  return (groups);
 }

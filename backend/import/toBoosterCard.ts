@@ -1,7 +1,8 @@
-const { upperFirst, find } = require("lodash");
-const uuidV1 = require("uuid").v1;
+import { Card, ExternalCard, MtgJsonCard } from "../../common/src/types/card";
+import { upperFirst, find } from "lodash";
+import { v1 as uuidV1 } from 'uuid';
 
-const toBoosterCard = (setCode) => (mtgjsonCard, index, rawCards) => {
+export const toBoosterCard = (setCode: string) => (mtgjsonCard: MtgJsonCard, index: number, rawCards: MtgJsonCard[]): ExternalCard => {
   let {
     name,
     faceName,
@@ -73,7 +74,7 @@ const COLORS = {
   G: "green"
 };
 
-function getDoubleFacedProps({layout, name}, rawCards) {
+function getDoubleFacedProps({layout, name}: ExternalCard, rawCards: ExternalCard[]) {
   const isDoubleFaced = /^modal_dfc$|^double-faced$|^transform$|^flip$|^meld$/i.test(layout);
   let names = name.split(" // ");
   let flippedCardURL = "";
@@ -103,7 +104,7 @@ function getDoubleFacedProps({layout, name}, rawCards) {
   };
 }
 
-function getColor({ colors, layout, name,faceName, frameEffects = [] }, rawCards) {
+function getColor({ colors, layout, name,faceName, frameEffects = [] }: ExternalCard, rawCards: ExternalCard[]) {
   if (frameEffects.includes("devoid")) {
     return "colorless";
   }
@@ -130,5 +131,3 @@ function getColor({ colors, layout, name,faceName, frameEffects = [] }, rawCards
     return "multicolor";
   }
 }
-
-module.exports = toBoosterCard;

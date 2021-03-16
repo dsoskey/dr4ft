@@ -1,29 +1,35 @@
-const {pull, find, pullAllWith, remove, times, sample, chain} = require("lodash");
+import { pull, find, pullAllWith, remove, times, sample, chain, Dictionary } from "lodash";
 
-const Player = require("./index");
-const util = require("../util");
-const hash = require("../hash");
-const logger = require("../logger");
+import { Player, SelectedCards } from "./player";
+import { deck as _deck } from "../util";
+import hash from "../hash";
+import { logger } from "../logger";
+import { Sock } from "../sock";
+import { Card } from "../../common/src/types/card";
+import { Deck } from "../../common/src/types/deck";
 
-module.exports = class Human extends Player {
-  constructor(sock, picksPerPack, burnsPerPack, gameId) {
+export default class Human extends Player {
+  sock?: Sock;
+  hash: any;
+
+  constructor(sock: Sock, picksPerPack: number, burnsPerPack: number, gameId: string) {
     super({
       isBot: false,
       isConnected: true,
       name: sock.name,
       id: sock.id,
+      gameId,
+      picksPerPack,
+      burnsPerPack,
     });
-    this.GameId = gameId;
-    this.picksPerPack = picksPerPack;
-    this.burnsPerPack = burnsPerPack;
     this.attach(sock);
   }
 
-  attach(sock) {
+  attach(sock: Sock) {
     if (this.sock && this.sock !== sock)
-      this.sock.ws.close();
+      this.sock.websocket.close(); // TODO: Delegate?
 
-    sock.mixin(this);
+    this.sock = sock;
     sock.removeAllListeners("setSelected");
     sock.on("setSelected", this._setSelected.bind(this));
     sock.removeAllListeners("confirmSelection");
@@ -37,11 +43,11 @@ module.exports = class Human extends Player {
       this.send("pack", pack);
     this.send("pool", this.pool);
   }
-  err(message) {
+  err(message: string) {
     this.send("error", message);
   }
-  _hash(deck) {
-    if (!util.deck(deck, this.pool)){
+  _hash(deck: Deck<Dictionary<number>>) {
+    if (!_deck(deck, this.pool)){
       logger.warn(`wrong deck submitted for hashing by ${this.name}`);
       return;
     }
@@ -53,17 +59,28 @@ module.exports = class Human extends Player {
     this.send = () => {};
     this.emit("meta");
   }
-  _setSelected({ picks, burns }) {
+  _setSelected({ picks, burns }: SelectedCards) {
     this.selected = { picks, burns };
   }
   _confirmSelection() {
     this.confirmSelection();
   }
-  getPack(pack) {
+  getPack(pack: Card[]) {
     if (this.packs.push(pack) === 1)
       this.sendPack(pack);
   }
-  sendPack(pack) {
+  send = (type: string, ...rest: any[]) => {
+    if (this.sock) {
+      this.sock.send(type, ...rest);
+    } else {
+      logger.error(`Tried to send message with no sock: ${type}: ${JSON.stringify(rest)}`)
+    }
+  }
+  exit = () => {
+    this.emit('exit', this);
+  }
+
+  sendPack(pack: Card[]) {
     if (this.useTimer) {
       let timer = [];
       // http://www.wizards.com/contentresources/wizards/wpn/main/documents/magic_the_gathering_tournament_rules_pdf1.pdf pp43
@@ -99,7 +116,7 @@ module.exports = class Human extends Player {
     this.send("pickNumber", ++this.pickNumber);
     this.send("pack", pack);
   }
-  updateDraftStats(pack, pool) {
+  updateDraftStats(pack: Card[], pool: Card[]) {
     this.draftStats.push({
       picked: chain(pack)
         .filter(card => this.selected.picks.includes(card.cardId))
@@ -113,15 +130,15 @@ module.exports = class Human extends Player {
     });
   }
   confirmSelection() {
-    const pack = this.packs.shift();
+    const pack = this.packs.shift()!;
     this.selected.picks.forEach((cardId) => {
       const card = find(pack, c => c.cardId === cardId);
       if (!card) {
         return;
       }
       pull(pack, card);
-      logger.info(`GameID: ${this.GameId}, player ${this.name}, picked: ${card.name}`);
-      this.draftLog.pack.push( [`--> ${card.name}`].concat(pack.map(x => `    ${x.name}`)) );
+      logger.info(`GameID: ${this.gameId}, player ${this.name}, picked: ${card.name}`);
+      this.draftLog.pack.push( ...[`--> ${card.name}`].concat(pack.map(x => `    ${x.name}`)) );
       this.pool.push(card);
       const pickcard = card.foil ? "*" + card.name + "*" : card.name ;
       this.picks.push(pickcard);
@@ -147,6 +164,7 @@ module.exports = class Human extends Player {
       burns: []
     };
 
+    // @ts-ignore don't know why draft log is both a string rep of the picks and a card object
     this.updateDraftStats(this.draftLog.pack, this.pool);
 
     this.emit("pass", pack);
@@ -161,7 +179,7 @@ module.exports = class Human extends Player {
     // pick cards
     const remainingToPick = Math.min(pack.length, this.picksPerPack - this.selected.picks.length);
     times(remainingToPick, () => {
-      const randomCard = sample(pack);
+      const randomCard = sample(pack)!;
       this.selected.picks.push(randomCard.cardId);
       pull(pack, randomCard);
     });

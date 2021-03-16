@@ -1,0 +1,8 @@
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "moduleResolution": "node",
+        "outDir": "built/backend"
+    },
+    "include": ["app.ts", "backend/src/**/*", "common/src/**/*", "config/src/**/*", "scripts/**/*"]
+}

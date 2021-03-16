@@ -22,7 +22,7 @@ export const SetReplicated = ({ selectedSet, type }: SetReplicatedProps) => {
   };
   return (
     <select value={selectedSet} onChange={onSetChange} key={0}>
-      <SetChoices/>
+      {SetChoices()}
     </select>
   );
 };

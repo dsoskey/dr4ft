@@ -27,8 +27,7 @@ export default {
     }
   },
   pad(len: number, c: string, s: string | number) {
-    s = '' + s
-    let prefix = c.repeat(len - s.length)
+    let prefix = c.repeat(len - s.toString.length)
     return prefix + s
   },
   seq(index: number, end: number) {

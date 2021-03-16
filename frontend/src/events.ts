@@ -11,6 +11,8 @@ import { Card } from "common/src/types/card";
 import { Deck, DeckRow } from "common/src/types/deck";
 import { Message } from "common/src/types/message";
 import { SetType } from "./app";
+import { Cube } from "common/src/types/cube";
+import { GameOptions, GameType } from "common/src/types/game";
 
 /**
  * @desc this is the list of all the events that can be triggered by the app
@@ -133,9 +135,9 @@ export const events = {
 
     //TODO: either accept to use the legacy types (draft, sealed, chaos draft ...) by  keeping it like this
     // OR change backend to accept "regular draft" instead of "draft" and "regular sealed" instead of "sealed"
-    const type = `${/regular/.test(gamesubtype) ? "" : gamesubtype + " "}${gametype}`;
+    const type = `${/regular/.test(gamesubtype) ? "" : gamesubtype + " "}${gametype}` as GameType;
 
-    let options: any = {type, seats, title, isPrivate, modernOnly, totalChaos, picksPerPack};
+    let options: GameOptions = {type, seats, title, isPrivate, modernOnly, totalChaos, picksPerPack};
 
     switch (gamesubtype) {
     case "regular": {
@@ -319,13 +321,13 @@ export const events = {
   },
 };
 
-const parseCubeOptions = () => {
+const parseCubeOptions = (): Cube => {
   let {list, cards, packs, cubePoolSize, burnsPerPack} = app.state;
   cards = Number(cards);
   packs = Number(packs);
   cubePoolSize = Number(cubePoolSize);
 
-  list = list
+  const jawns = list
     .split("\n")
     .map(x => x
       .trim()
@@ -333,9 +335,8 @@ const parseCubeOptions = () => {
       .replace(/\s*\/+\s*/g, " // ")
       .toLowerCase())
     .filter(x => x)
-    .join("\n");
 
-  return {list, cards, packs, cubePoolSize, burnsPerPack};
+  return {list: jawns, cards, packs, cubePoolSize, burnsPerPack};
 };
 
 const clickPack = (card: Card) => {
@@ -354,7 +355,7 @@ const hash = () => {
     side: app.state.gameState.countCardsByName(Zone.side),
   });
 };
-
+// Why is the hash version of the deck a different type than the collectDeck version??????
 const collectDeck = (): Deck => ({
   main: collectByName(app.state.gameState.get(Zone.main)),
   side: collectByName(app.state.gameState.get(Zone.side), true)

@@ -1,8 +1,8 @@
-const { createLogger, format, transports } = require("winston");
+import { createLogger, format, transports } from "winston";
 const { combine, timestamp, printf } = format;
-const { logger: config } = require("../config");
+import { logger as config } from "../config";
 
-const logger = createLogger({
+export const logger = createLogger({
   level: config.level,
   format: combine(
     timestamp({ format: "YYYY-MM-DD HH:mm:ss,SSSZZ" }),
@@ -20,5 +20,3 @@ if (config.file.enabled) {
     ...config.file,
   }));
 }
-
-module.exports = logger;

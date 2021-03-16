@@ -1,34 +1,78 @@
-const crypto = require("crypto");
-const path = require("path");
-const {shuffle, truncate} = require("lodash");
-const uuid = require("uuid");
-const jsonfile = require("jsonfile");
-const Bot = require("./player/bot");
-const Human = require("./player/human");
-const Pool = require("./pool");
-const Room = require("./room");
-const Rooms = require("./rooms");
-const logger = require("./logger");
-const Sock = require("./sock");
-const {saveDraftStats, getDataDir} = require("./data");
+import crypto from "crypto";
+import path from "path";
+import { shuffle, truncate } from "lodash";
+import { v1 as uuidv1, v4 as uuidv4 } from "uuid";
+import jsonfile from "jsonfile";
+import Bot from "./player/bot";
+import Human from "./player/human";
+import Pool from "./pool";
+import { Room } from "./room";
+import Rooms from "./rooms";
+import { logger } from "./logger";
+import { HasSock, Sock } from "./sock";
+import { saveDraftStats, getDataDir } from "./data";
+import { Player } from "./player/player";
+import { Logger } from "winston";
+import { TimerLength } from "../common/src/types/state";
+import { Cube } from '../common/src/types/cube';
+import { GameProps, GameType, StartOptions } from '../common/src/types/game';
 
-module.exports = class Game extends Room {
-  constructor({ hostId, title, seats, type, sets, cube, isPrivate, modernOnly, totalChaos, chaosPacksNumber, picksPerPack }) {
+const hasSock = (player: Player): player is Human => {
+  return (player as any).attach !== undefined;
+}
+
+export class Game extends Room {
+  readonly id: string = uuidv1();
+  readonly secret: string = uuidv4();
+
+  private hostId: string;
+
+  private delta: number = -1;
+  private title: string;
+  private seats: number;
+  private type: GameType;
+  private sets: string[];
+  private cube?: Cube;
+  private modernOnly: boolean;
+  private totalChaos: boolean;
+  private chaosPacksNumber: number;
+  private picksPerPack: number;
+  private packsInfo: string;
+  // Total number of rounds
+  private rounds: number = -1;
+  // Current round
+  round: number = 0;
+  private bots: number = 0;
+  private addBots: boolean = false;
+  private isDecadent: boolean = false;
+  players: Player[] = [];
+  expires: number = -1;
+  private useTimer: boolean = false;
+  private timerLength: TimerLength = 'Leisurely';
+
+  private logger: Logger = logger.child({ id: this.id });
+
+  /**
+   * Current number of packs open at the table.
+   * Starting at 1 because of pass() 
+   */
+  private packCount: number = 1;
+  pool: any;
+
+  
+  constructor({ hostId, title, seats, type, sets, cube, isPrivate, modernOnly, totalChaos, chaosPacksNumber, picksPerPack }: GameProps) {
     super({ isPrivate });
-    const gameID = uuid.v1();
-    Object.assign(this, {
-      title, seats, type, isPrivate, modernOnly, totalChaos, cube, chaosPacksNumber, picksPerPack,
-      delta: -1,
-      hostID: hostId,
-      id: gameID,
-      players: [],
-      round: 0,
-      bots: 0,
-      sets: sets || [],
-      isDecadent: false,
-      secret: uuid.v4(),
-      logger: logger.child({ id: gameID })
-    });
+
+    this.hostId = hostId;
+    this.title = title;
+    this.seats = seats;
+    this.type = type;
+    this.modernOnly = modernOnly;
+    this.totalChaos = totalChaos;
+    this.cube = cube;
+    this.sets = sets ?? [];
+    this.chaosPacksNumber = chaosPacksNumber ?? -1;
+    this.picksPerPack = picksPerPack;
     // Handle packsInfos to show various informations about the game
     switch(type) {
     case "draft":
@@ -44,15 +88,15 @@ module.exports = class Game extends Room {
       this.isDecadent = true;
       break;
     case "cube draft":
-      this.packsInfo = `${cube.packs} packs with ${cube.cards} cards from a pool of ${cube.list.length} cards`;
-      if (cube.burnsPerPack > 0) {
-        this.packsInfo += ` and ${cube.burnsPerPack} cards to burn per pack`;
+      this.packsInfo = `${this.cube?.packs} packs with ${this.cube?.cards} cards from a pool of ${this.cube?.list.length} cards`;
+      if (this.cube && this.cube.burnsPerPack > 0) {
+        this.packsInfo += ` and ${this.cube.burnsPerPack} cards to burn per pack`;
       }
-      this.rounds = this.cube.packs;
+      this.rounds = this.cube?.packs ?? -1;
       break;
     case "cube sealed":
-      this.packsInfo = `${cube.cubePoolSize} cards per player from a pool of ${cube.list.length} cards`;
-      this.rounds = this.cube.packs;
+      this.packsInfo = `${this.cube?.cubePoolSize} cards per player from a pool of ${this.cube?.list.length} cards`;
+      this.rounds = this.cube?.packs ?? -1;
       break;
     case "chaos draft":
     case "chaos sealed": {
@@ -77,30 +121,30 @@ module.exports = class Game extends Room {
     }
 
     this.renew();
-    Rooms.add(gameID, this);
-    this.once("kill", () => Rooms.delete(gameID));
+    Rooms.add(this.id, this);
+    this.once("kill", () => Rooms.delete(this.id));
     Game.broadcastGameInfo();
   }
 
-  renew() {
+  renew = () => {
     const NINETY_MINUTES = 1000 * 60 * 90;
     this.expires = Date.now() + NINETY_MINUTES;
   }
 
-  get isActive() {
-    return this.players.some(x => x.isActive);
+  isActive = () => {
+    return this.players.some(x => x.isActive());
   }
 
-  get didGameStart() {
+  didGameStart = () => {
     return this.round !== 0;
   }
 
-  get isGameFinished() {
+  isGameFinished = () => {
     return this.round === -1;
   }
 
-  get isGameInProgress() {
-    return this.didGameStart && !this.isGameFinished;
+  isGameInProgress = () => {
+    return this.didGameStart() && !this.isGameFinished();
   }
 
   // The number of total games. This includes ones that have been long since
@@ -112,14 +156,14 @@ module.exports = class Game extends Room {
   // The number of games which have a player still in them.
   static numActiveGames() {
     return Rooms.getAll()
-      .filter(({isActive}) => isActive)
+      .filter(({isActive}) => isActive())
       .length;
   }
 
   // The number of players in active games.
   static totalNumPlayers() {
     return Rooms.getAll()
-      .filter(({isActive}) => isActive)
+      .filter(({isActive}) => isActive())
       .reduce((count, {players}) => {
         return count + players.filter(x => x.isConnected && !x.isBot).length;
       }, 0);
@@ -138,46 +182,44 @@ module.exports = class Game extends Room {
     Sock.broadcast("set", { roomInfo: Game.getRoomInfo() });
   }
 
+  // TODO: if doesn't work, write a regression test!
   static getRoomInfo() {
     return Rooms.getAll()
-      .filter(({isPrivate, didGameStart, isActive}) => !isPrivate && !didGameStart && isActive)
-      .reduce((acc, game) => {
-        const usedSeats = game.players.length;
-        const totalSeats = game.seats;
-        if (usedSeats === totalSeats)
-          return acc;
-
-        acc.push({
-          id: game.id,
-          title: game.title,
-          usedSeats,
-          totalSeats,
-          name: game.name,
-          packsInfo: game.packsInfo,
-          type: game.type,
-          timeCreated: game.timeCreated,
-        });
-        return acc;
-      }, []);
+      .filter(({isPrivate, didGameStart, isActive, players, seats}) =>
+       !isPrivate && !didGameStart() && isActive() && players.length !== seats)
+      .map((game) => ({
+        id: game.id,
+        title: game.title,
+        usedSeats: game.players.length,
+        totalSeats: game.seats,
+        name: game.name, // This one's weird. not sure where game.name is coming from
+        packsInfo: game.packsInfo,
+        type: game.type,
+        timeCreated: game.timeCreated,
+      }));
   }
 
-  name(name, sock) {
+  name(name: string, sock: Sock) {
+    logger.info(name);
     super.name(name, sock);
     sock.h.name = sock.name;
     this.meta();
   }
 
-  join(sock) {
+  join = (sock: Sock) => {
     // Reattach sock to player based on his id
-    const reattachPlayer = this.players.some((player) => {
+    const reattachPlayer = this.players.some((player: Player) => {
       if (player.id === sock.id) {
         this.logger.debug(`${sock.name} re-joined the game`);
         player.err("only one window active");
-        player.attach(sock);
-        if (!this.didGameStart) {
-          this.players.push(player);
+        if (hasSock(player)) {
+          player.attach(sock);
         }
-        this.greet(player);
+        if (!this.didGameStart()) {
+          this.players.push(player);
+
+        }
+        this.greet(player as Human);
         this.meta();
         super.join(sock);
         return true;
@@ -188,7 +230,7 @@ module.exports = class Game extends Room {
       return;
     }
 
-    if (this.didGameStart) {
+    if (this.didGameStart()) {
       return sock.err("game already started");
     }
 
@@ -199,33 +241,35 @@ module.exports = class Game extends Room {
     super.join(sock);
     this.logger.debug(`${sock.name} joined the game`);
 
-    const h = new Human(sock, this.picksPerPack, this.getBurnsPerPack(), this.id);
-    if (h.id === this.hostID) {
-      h.isHost = true;
+    const human = new Human(sock, this.picksPerPack, this.getBurnsPerPack(), this.id);
+    if (human.id === this.hostId) {
+      human.isHost = true;
       sock.once("start", this.start.bind(this));
       sock.removeAllListeners("kick");
       sock.on("kick", this.kick.bind(this));
       sock.removeAllListeners("swap");
       sock.on("swap", this.swap.bind(this));
     }
-    h.on("meta", this.meta.bind(this));
-    this.players.push(h);
-    this.greet(h);
+    human.on("meta", this.meta.bind(this));
+    this.players.push(human);
+
+    this.greet(human);
     this.meta();
   }
 
+  // IDEA: Decouple the GameInstance from the RulesEngine
   getBurnsPerPack() {
     switch (this.type) {
     case "decadent draft":
       return Number.MAX_VALUE;
     case "cube draft":
-      return this.cube.burnsPerPack;
+      return this.cube!.burnsPerPack;
     default:
       return 0;
     }
   }
 
-  swap([i, j]) {
+  swap([i, j]: number[]) {
     const l = this.players.length;
 
     if (j < 0 || j >= l)
@@ -237,13 +281,13 @@ module.exports = class Game extends Room {
     this.meta();
   }
 
-  kick(i) {
+  kick(i: number) {
     const h = this.players[i];
     if (!h || h.isBot)
       return;
 
     this.logger.debug(`${h.name} is being kicked from the game`);
-    if (this.didGameStart)
+    if (this.didGameStart())
       h.kick();
     else
       h.exit();
@@ -252,31 +296,31 @@ module.exports = class Game extends Room {
     h.kick();
   }
 
-  greet(h) {
-    h.isConnected = true;
-    h.send("set", {
-      isHost: h.isHost,
+  greet(human: Human) {
+    human.isConnected = true;
+    human.send("set", {
+      isHost: human.isHost,
       round: this.round,
-      self: this.players.indexOf(h),
+      self: this.players.indexOf(human),
       sets: this.sets,
       gameId: this.id
     });
-    h.send("gameInfos", {
+    human.send("gameInfos", {
       type: this.type,
       packsInfo: this.packsInfo,
       sets: this.sets,
       picksPerPack: this.picksPerPack,
-      burnsPerPack: this.type === "cube draft" ? this.cube.burnsPerPack : 0
+      burnsPerPack: this.type === "cube draft" ? this.cube!.burnsPerPack : 0
     });
 
-    if (this.isGameFinished) {
-      h.send("log", h.draftLog.round);
+    if (this.isGameFinished()) {
+      human.send("log", human.draftLog.round);
     }
   }
 
-  exit(sock) {
+  exit(sock: Sock) {
     super.exit(sock);
-    if (this.didGameStart)
+    if (this.didGameStart())
       return;
 
     sock.removeAllListeners("start");
@@ -287,8 +331,9 @@ module.exports = class Game extends Room {
     this.meta();
   }
 
-  meta(state = {}) {
+  meta(state: any = {}) {
     state.players = this.players.map(p => ({
+      // @ts-ignore
       hash: p.hash,
       name: p.name,
       time: p.time,
@@ -301,9 +346,9 @@ module.exports = class Game extends Room {
     Game.broadcastGameInfo();
   }
 
-  kill(msg) {
-    if (!this.isGameFinished) {
-      this.players.forEach(p => p.err(msg));
+  kill(message: string) {
+    if (!this.isGameFinished()) {
+      this.players.forEach(p => p.err(message));
     }
 
     Rooms.delete(this.id);
@@ -314,7 +359,7 @@ module.exports = class Game extends Room {
   }
 
   uploadDraftStats() {
-    const draftStats = this.cube
+    const draftStats: any = this.cube
       ? { list: this.cube.list }
       : { sets: this.sets };
     draftStats.id = this.id;
@@ -337,7 +382,7 @@ module.exports = class Game extends Room {
       }
     });
     const cubeHash = /cube/.test(this.type)
-      ? crypto.createHash("SHA512").update(this.cube.list.join("")).digest("hex")
+      ? crypto.createHash("SHA512").update(this.cube!.list.join("")).digest("hex")
       : "";
 
     const draftcap = {
@@ -369,7 +414,7 @@ module.exports = class Game extends Room {
     }
   }
 
-  pass(p, pack) {
+  pass(p: Player, pack: any[]) {
     if (!pack.length) {
       if (!--this.packCount)
         this.startRound();
@@ -389,7 +434,7 @@ module.exports = class Game extends Room {
   startRound() {
     const { players } = this;
     if (this.round !== 0) {
-      players.forEach((p) => {
+      players.forEach((p: Player) => {
         p.cap.packs[this.round] = p.picks;
         p.picks = [];
         if (!p.isBot) {
@@ -434,7 +479,7 @@ module.exports = class Game extends Room {
   getStatus() {
     const { players, didGameStart, round } = this;
     return {
-      didGameStart: didGameStart,
+      didGameStart: didGameStart(),
       currentPack: round,
       players: players.map((player, index) => ({
         playerName: player.name,
@@ -444,7 +489,7 @@ module.exports = class Game extends Room {
     };
   }
 
-  getDecks({ seat, id }) {
+  getDecks({ seat, id }: any) {
     if (typeof seat == "number") {
       const player = this.players[seat];
       return player.getPlayerDeck();
@@ -452,7 +497,7 @@ module.exports = class Game extends Room {
 
     if (typeof id == "string") {
       const player = this.players.find(p => p.id === id);
-      return player.getPlayerDeck();
+      return player?.getPlayerDeck();
     }
 
     return this.players.map((player) => player.getPlayerDeck());
@@ -463,18 +508,18 @@ module.exports = class Game extends Room {
     switch (this.type) {
     case "cube draft": {
       this.pool = Pool.DraftCube({
-        cubeList: this.cube.list,
+        cubeList: this.cube!.list,
         playersLength: this.players.length,
-        packsNumber: this.cube.packs,
-        playerPackSize: this.cube.cards
+        packsNumber: this.cube!.packs,
+        playerPackSize: this.cube!.cards
       });
       break;
     }
     case "cube sealed": {
       this.pool = Pool.SealedCube({
-        cubeList: this.cube.list,
+        cubeList: this.cube!.list,
         playersLength: this.players.length,
-        playerPoolSize: this.cubePoolSize
+        playerPoolSize: this.cube!.cubePoolSize
       });
       break;
     }
@@ -543,7 +588,7 @@ module.exports = class Game extends Room {
     return this.addBots && !this.isDecadent;
   }
 
-  start({ addBots, useTimer, timerLength, shufflePlayers }) {
+  start({ addBots, useTimer, timerLength, shufflePlayers }: StartOptions) {
     try {
       Object.assign(this, { addBots, useTimer, timerLength, shufflePlayers });
       this.renew();
@@ -551,9 +596,10 @@ module.exports = class Game extends Room {
       if (this.shouldAddBots()) {
         while (this.players.length < this.seats) {
           const burnsPerPack = this.type === "cube draft"
-            ? this.cube.burnsPerPack
+            ? this.cube!.burnsPerPack
             : 0;
           this.players.push(new Bot(this.picksPerPack, burnsPerPack, this.id));
+
           this.bots++;
         }
       }
@@ -591,7 +637,7 @@ module.exports = class Game extends Room {
     Game State
     ----------
     id: ${this.id}
-    hostId: ${this.hostID}
+    hostId: ${this.hostId}
     title: ${this.title}
     seats: ${this.seats}
     type: ${this.type}
@@ -608,11 +654,11 @@ module.exports = class Game extends Room {
     `cubePoolSize: ${this.cube.cubePoolSize}
     packsNumber: ${this.cube.packs}
     playerPackSize: ${this.cube.cards}
-    cube: ${truncate(this.cube.list, 30)}`
+    cube: ${this.cube.list.slice(0, 30)}`
     : ""}`;
   }
 
-  getNextPlayer(index) {
+  getNextPlayer(index: number) {
     const {length} = this.players;
     return this.players[(index % length + length) % length];
   }

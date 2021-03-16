@@ -1,11 +1,12 @@
-const express = require("express");
+import express from "express";
 const gamesRouter = express.Router();
-const Game = require("../game");
-const Rooms = require("../rooms");
-const Util = require("../util");
-const assert = require("assert");
+import { Game } from "../game";
+import Rooms from "../rooms";
+import { prepareGame, start } from "../util";
+import assert from "assert";
+import { logger } from "../logger";
 
-const checkGameId = (req, res, next) => {
+const checkGameId = (req: any, res: any, next: any) => {
   req.game = Rooms.get(req.params.gameId);
   if (!req.game) {
     res.status(404).json({
@@ -16,7 +17,7 @@ const checkGameId = (req, res, next) => {
   }
 };
 
-const checkGameSecret = (req, res, next) => {
+const checkGameSecret = (req: any, res: any, next: any) => {
   try {
     assert(req.game.secret === req.query.secret, "The secret provided doesn't fit gameId's secret");
     next();
@@ -25,18 +26,19 @@ const checkGameSecret = (req, res, next) => {
   }
 };
 
-const checkGameStartParams = (req, res, next) => {
+const checkGameStartParams = (req: any, res: any, next: any) => {
   try {
-    Util.start(req.body);
+    start(req.body);
     next();
   } catch (err) {
     res.status(400).json(err.message);
   }
 };
 
-const checkGameCreateParams = (req, res, next) => {
+const checkGameCreateParams = (req: any, res: any, next: any) => {
   try {
-    Util.game(req.body);
+    logger.info(req.body);
+    prepareGame(req.body);
     next();
   } catch (err) {
     res.status(400).json(err.message);
@@ -56,7 +58,7 @@ gamesRouter
       modernOnly[boolean],
       totalChaos[boolean]
   */
-  .post("/", checkGameCreateParams, (req, res) => {
+  .post("/", checkGameCreateParams, (req: any, res: any) => {
     const game = new Game(req.body);
     res.json({
       "link": `#g/${game.id}`,
@@ -65,7 +67,7 @@ gamesRouter
   })
 
   /* start => {addBots, useTimer, timerLength, shufflePlayers} */
-  .post("/:gameId/start", checkGameId, checkGameSecret, checkGameStartParams, (req, res) => {
+  .post("/:gameId/start", checkGameId, checkGameSecret, checkGameStartParams, (req: any, res: any) => {
     req.game.start(req.body);
     res.json({
       "message": `Game ${req.params.gameId} successfully started`,
@@ -76,7 +78,7 @@ gamesRouter
    * sends an object according to the endpoint api/games/:gameId/status.
    * It shows if the game started, the current pack and players' infos.
    */
-  .get("/:gameId/status", checkGameId, (req, res) => {
+  .get("/:gameId/status", checkGameId, (req: any, res: any) => {
     res.send(req.game.getStatus());
   })
 
@@ -87,8 +89,8 @@ gamesRouter
    * then it returns an array of the decks of all players.
    */
   // secret=[string]&seat=[int]&id[string]
-  .get("/:gameId/deck", checkGameId, checkGameSecret, (req, res) => {
-    res.send(req.game.getDecks(req.query));
+  .get("/:gameId/deck", checkGameId, checkGameSecret, (req: any, res: any) => {
+    res.send((req.game as Game).getDecks(req.query));
   });
 
-module.exports = gamesRouter;
+export default gamesRouter;

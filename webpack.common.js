@@ -10,7 +10,7 @@ module.exports = {
     app: "./frontend/src/init.ts"
   },
   output: {
-    path: path.join(__dirname, "./built"),
+    path: path.join(__dirname, "./built/frontend"),
     filename: "[name]-[hash].js",
     publicPath: "/"
   },
@@ -55,6 +55,9 @@ module.exports = {
         ],
         use: {
           loader: 'ts-loader',
+          options: {
+            configFile: 'fsconfig.json',
+          }
         },
       },
       {

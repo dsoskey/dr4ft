@@ -1,25 +1,26 @@
-const {sample, pull, times} = require("lodash");
+import { sample, pull, times } from "lodash";
 
-const Player = require("./index");
-const logger = require("../logger");
+import { Player } from "./player";
+import { logger } from "../logger";
+import { Card } from "../../common/src/types/card";
 
-module.exports = class Bot extends Player {
-  constructor(picksPerPack, burnsPerPack, gameId) {
+export default class Bot extends Player {
+  constructor(picksPerPack: number, burnsPerPack: number, gameId: string) {
     super({
       isBot: true,
       isConnected: true,
       name: "bot",
       id: "",
+      gameId,
+      picksPerPack,
+      burnsPerPack,
     });
-    this.gameId= gameId;
-    this.picksPerPack = picksPerPack;
-    this.burnsPerPack = burnsPerPack;
   }
 
-  getPack(pack) {
+  getPack(pack: Card[]) {
     const cardsToPick = Math.min(this.picksPerPack, pack.length);
     times(cardsToPick, () => {
-      const randomPick = sample(pack);
+      const randomPick = sample(pack)!;
       logger.info(`GameID: ${this.gameId}, Bot, picked: ${randomPick.name}`);
       this.picks.push(randomPick.name);
       pull(pack, randomPick);
@@ -28,11 +29,15 @@ module.exports = class Bot extends Player {
     // burn cards
     const cardsToBurn = Math.min(this.burnsPerPack, pack.length);
     times(cardsToBurn, () => {
-      const randomPick = sample(pack);
+      const randomPick = sample(pack)!;
       logger.info(`GameID: ${this.gameId}, Bot, burnt: ${randomPick.name}`);
       pull(pack, randomPick);
     });
 
     this.emit("pass", pack);
   }
+
+  handleTimeout = () => {}
+  err = () => {}
+  send = () => {}
 };
