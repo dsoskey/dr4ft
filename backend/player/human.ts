@@ -37,6 +37,7 @@ export default class Human extends Player {
     sock.removeAllListeners("hash");
     sock.on("hash", this._hash.bind(this));
     sock.once("exit", this._farewell.bind(this));
+    sock.h = this;
 
     let [pack] = this.packs;
     if (pack)

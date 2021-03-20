@@ -200,7 +200,7 @@ export class Game extends Room {
   }
 
   name(name: string, sock: Sock) {
-    logger.info(name);
+    logger.info(name)
     super.name(name, sock);
     sock.h.name = sock.name;
     this.meta();
