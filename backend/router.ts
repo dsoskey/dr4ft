@@ -10,26 +10,24 @@ import { GameOptions } from "../common/src/types/game";
 // TODO: Verify "this" is correct
 function create(this: Sock, opts: GameOptions) {
   try {
-    logger.error(JSON.stringify(opts));
     prepareGame(opts);
   } catch(err) {
     logger.error(`user ${this.name} could not create a game - ${err.message}`);
     return this.err(err.message);
   }
 
-  // logger.info(JSON.stringify(this));
   const g = new Game({ ...opts, hostId: this.id });
   logger.info(`user ${this.name} created a game with id ${g.id}`);
-  this.send("route", "g/" + g.id);
+  this.send("route", `g/${g.id}`);
   logger.info('sent route');
 }
 
-function join(this: Sock, roomID: string) {
+function join(roomID: string, sock: Sock) {
   const room = Rooms.get(roomID);
   if (!room)
-    return this.err(`No game found with id ${roomID}`);
-  this.exit();
-  room.join(this);
+    return sock.err(`No game found with id ${roomID}`);
+  sock.exit();
+  room.join(sock);
 }
 
 export default function (ws: Socket) {

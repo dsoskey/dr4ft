@@ -207,7 +207,7 @@ export class App extends EventEmitter {
       }
     });
 
-    if (this.state.id === undefined) {
+    if (this.state.id === null) {
       this.state.id = _.uid();
       localStorage.setItem('id', JSON.stringify(this.state.id));
     }
@@ -244,11 +244,12 @@ export class App extends EventEmitter {
       this.state.gameState = new GameState(gameStates[id]);
     }
     this.state.gameState.on("updateGameState", (gameState) => {
-    this.save("gameStates", {
-        // ...App.state.gameStates,
-        [id]: gameState
-      });
-    });
+      this.save("gameStates", {
+          // ...App.state.gameStates,
+          [id]: gameState
+        });
+      }
+    );
     this.state.gameState.on("setSelected", (state) => {
       this.send("setSelected", state);
     });

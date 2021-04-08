@@ -184,7 +184,8 @@ export class Game extends Room {
 
   // TODO: if doesn't work, write a regression test!
   static getRoomInfo() {
-    return Rooms.getAll()
+    const rooms = Rooms.getAll();
+    return rooms
       .filter(({isPrivate, didGameStart, isActive, players, seats}) =>
        !isPrivate && !didGameStart() && isActive() && players.length !== seats)
       .map((game) => ({
@@ -206,55 +207,50 @@ export class Game extends Room {
     this.meta();
   }
 
-  join = (sock: Sock) => {
+  join(sock: Sock) {
     // Reattach sock to player based on his id
-    const reattachPlayer = this.players.some((player: Player) => {
-      if (player.id === sock.id) {
-        this.logger.debug(`${sock.name} re-joined the game`);
-        player.err("only one window active");
-        if (hasSock(player)) {
-          player.attach(sock);
-        }
-        if (!this.didGameStart()) {
-          this.players.push(player);
+    const existingPlayer = this.players.find((p: Player) => p.id === sock.id);
 
-        }
-        this.greet(player as Human);
-        this.meta();
-        super.join(sock);
-        return true;
+    if (existingPlayer) {
+      this.logger.debug(`${sock.name} re-joined the game`);
+      // kick any existing connections with the same ID
+      existingPlayer.err("only one window active");
+      if (hasSock(existingPlayer)) {
+        existingPlayer.attach(sock);
+        this.greet(existingPlayer);
       }
-    });
-
-    if (reattachPlayer) {
-      return;
+      if (!this.didGameStart()) {
+        this.players.push(existingPlayer);
+      }
+      this.meta();
+      super.join(sock);
+    } else {
+      if (this.didGameStart()) {
+        return sock.err("game already started");
+      }
+  
+      if (this.players.length >= this.seats) {
+        return sock.err("game is full");
+      }
+  
+      super.join(sock);
+      this.logger.debug(`${sock.name} joined the game`);
+  
+      const human = new Human(sock, this.picksPerPack, this.getBurnsPerPack(), this.id);
+      if (human.id === this.hostId) {
+        human.isHost = true;
+        sock.once("start", this.start.bind(this));
+        sock.removeAllListeners("kick");
+        sock.on("kick", this.kick.bind(this));
+        sock.removeAllListeners("swap");
+        sock.on("swap", this.swap.bind(this));
+      }
+      human.on("meta", this.meta.bind(this));
+      this.players.push(human);
+  
+      this.greet(human);
+      this.meta();
     }
-
-    if (this.didGameStart()) {
-      return sock.err("game already started");
-    }
-
-    if (this.players.length >= this.seats) {
-      return sock.err("game is full");
-    }
-
-    super.join(sock);
-    this.logger.debug(`${sock.name} joined the game`);
-
-    const human = new Human(sock, this.picksPerPack, this.getBurnsPerPack(), this.id);
-    if (human.id === this.hostId) {
-      human.isHost = true;
-      sock.once("start", this.start.bind(this));
-      sock.removeAllListeners("kick");
-      sock.on("kick", this.kick.bind(this));
-      sock.removeAllListeners("swap");
-      sock.on("swap", this.swap.bind(this));
-    }
-    human.on("meta", this.meta.bind(this));
-    this.players.push(human);
-
-    this.greet(human);
-    this.meta();
   }
 
   // IDEA: Decouple the GameInstance from the RulesEngine

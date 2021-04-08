@@ -1,6 +1,6 @@
 import { Socket } from "engine.io";
 import { EventEmitter } from "events";
-const { app: { DEFAULT_USERNAME } } = require("../config");
+import { app } from '../config';
 import { getPlayableSets, getLatestReleasedSet, getBoosterRulesVersion } from "./data";
 import { getVersion } from "./mtgjson";
 
@@ -26,7 +26,7 @@ export class Sock extends EventEmitter {
     super();
     this.websocket = ws;
     // @ts-ignore
-    const {id = "", name = DEFAULT_USERNAME} = ws.request._query;
+    const {id = "", name = app.DEFAULT_USERNAME} = ws.request._query;
     this.id = id.slice(0, 25);
     this.name = name.slice(0, 15);
 

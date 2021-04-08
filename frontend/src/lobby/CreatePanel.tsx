@@ -111,11 +111,11 @@ const CreateRoomModal = () => {
           appProperty="isPrivate"
           options={[{
             label: "Public",
-            value: true,
+            value: false,
             tooltip: "Anyone can join"
           }, {
             label: "Private",
-            value: false,
+            value: true,
             tooltip: "A link is required to join"
           }]}
         />

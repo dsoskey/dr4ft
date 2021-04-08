@@ -40,8 +40,9 @@ export default class Human extends Player {
     sock.h = this;
 
     let [pack] = this.packs;
-    if (pack)
+    if (pack) {
       this.send("pack", pack);
+    }
     this.send("pool", this.pool);
   }
   err(message: string) {
@@ -57,7 +58,6 @@ export default class Human extends Player {
   }
   _farewell() {
     this.isConnected = false;
-    this.send = () => {};
     this.emit("meta");
   }
   _setSelected({ picks, burns }: SelectedCards) {
@@ -70,8 +70,9 @@ export default class Human extends Player {
     if (this.packs.push(pack) === 1)
       this.sendPack(pack);
   }
-  send = (type: string, ...rest: any[]) => {
+  send(type: string, ...rest: any[]) {
     if (this.sock) {
+      logger.debug(`Sending ${type}: ${JSON.stringify(rest)} to ${this.sock.id}.`)
       this.sock.send(type, ...rest);
     } else {
       logger.error(`Tried to send message with no sock: ${type}: ${JSON.stringify(rest)}`)
