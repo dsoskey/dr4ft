@@ -9,7 +9,8 @@ import { Card } from "common/src/types/card";
 import { Zone } from "../../zones";
 
 interface CardBaseProps {
-  zoneName: Zone;
+  // TODO: REmove
+  zoneName?: Zone;
   card: Card;
   children?: React.ReactNode;
 }
