@@ -1,6 +1,7 @@
 import { EventEmitter } from "events";
 import { TimerLength } from '../../common/src/types/state';
 import { Card } from '../../common/src/types/card';
+import { DraftState, withSort } from "../../common/src/types/game";
 
 interface PlayerProps {
   id: string;
@@ -32,9 +33,24 @@ export abstract class Player extends EventEmitter {
   name: string;
   isHost: boolean = false;
   time: number = 0;
-  packs: Card[][] = [];
   selected: SelectedCards = { picks: [], burns: [] };
-  pool: Card[] = [];
+  draftState: withSort<Card> = {
+    sort: 'cmc',
+    state: {
+      pack: [],
+      main: [
+        { id: '0', items: [] },
+        { id: '1', items: [] },
+        { id: '2', items: [] },
+        { id: '3', items: [] },
+        { id: '4', items: [] },
+        { id: '5', items: [] },
+        { id: '6+', items: [] },
+      ],
+      side: [{ id: '0', items: [] }],
+      burn: [{ id: '0', items: [] }],
+    }
+  };
   cap: { packs: { [key: string]: string[] } } = { packs: {} };
   picks: string[] = [];
   draftLog: DraftLog = { round: {}, pack: [] };
@@ -64,8 +80,13 @@ export abstract class Player extends EventEmitter {
       seatNumber: self,
       playerName: this.name,
       id: this.id,
-      pool: this.pool.map(card => card.name)
+      pool: this.__pool(),
     };
+  }
+
+  __pool(): Card[] {
+    const { main, side } = this.draftState.state;
+    return main.flatMap((column) => column.items).concat(side.flatMap((column) => column.items));
   }
 
   isActive() {

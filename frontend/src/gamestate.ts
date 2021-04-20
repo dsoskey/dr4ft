@@ -1,17 +1,44 @@
-import {countBy, findIndex, pullAt, range, remove} from "lodash";
-import _ from "./utils";
-import { EventEmitter } from "events";
-import { Zone } from "./zones";
-import { BASIC_LANDS_BY_COLOR_SIGN } from "./basiclands";
-import { Card, CardId } from "common/src/types/card";
-import { SortType } from "./app";
+import { range, remove} from 'lodash';
+import _ from './utils';
+import _countBy from 'lodash/countBy';
+import _findIndex from 'lodash/findIndex';
+import _cloneDeep from 'lodash/cloneDeep';
+import _pullAt from 'lodash/pullAt';
+import _get from 'lodash/get';
+import _set from 'lodash/set';
+import _isEqual from 'lodash/isEqual'
+import { EventEmitter } from 'events';
+import { Zone } from './zones';
+import { BASIC_LANDS_BY_COLOR_SIGN } from './basiclands';
+import { Card, CardId } from 'common/src/types/card';
+import { withSort, DraftState, SortType } from 'common/src/types/game';
+import { app } from './router';
+
+/**^
+   * 2 types of actions
+   * any two different droppableIds are a move.
+   * any same droppableIds are a reorder.
+   * syntax: <UI_COMPONENT-CARD_ZONE-COLUMN_ID>
+   * CARD_ZONE: PACK | SIDE | BURN | MAIN
+   * UI_COMPONENT: BUTTON | COLUMN
+   * COLUMN_ID: string
+   */
+  const legalMoves = [
+    'pack-main',
+    'pack-side',
+    'pack-burn',
+    'main-main',
+    'main-side',
+    'side-side',
+    'side-main',
+];
 
 export const COLORS_TO_LANDS_NAME = {
-  "W": "Plains",
-  "U": "Island",
-  "B": "Swamp",
-  "R": "Mountain",
-  "G": "Forest",
+  'W': 'Plains',
+  'U': 'Island',
+  'B': 'Swamp',
+  'R': 'Mountain',
+  'G': 'Forest',
 };
 
 type ZoneState = Record<Zone, Card[]>;
@@ -23,17 +50,41 @@ const defaultZoneState = (): ZoneState => ({
   [Zone.junk]: []
 });
 
+export interface ColumnState<T> {
+  id: string; // By default is the key for the sort order
+  items: T[];
+}
+
+const initialDraftState: withSort<Card> = {
+  sort: 'cmc',
+  state: {
+    pack: [{ id: '0', items: [] }],
+    main: [
+      { id: '0', items: [] },
+      { id: '1', items: [] },
+      { id: '2', items: [] },
+      { id: '3', items: [] },
+      { id: '4', items: [] },
+      { id: '5', items: [] },
+      { id: '6', items: [] },
+    ],
+    side: [{ id: '0', items: [] }],
+    burn: [{ id: '0', items: [] }],
+  },
+}
+
+
 /**
  * @desc Map<cardId, zoneName>
- * @example { "cardId": "main", "othercardId": "side}
+ * @example { 'cardId': 'main', 'othercardId': 'side}
  */
 const defaultCardState = () => ({});
 
-type CardState = { [key: string]: Zone };
+type CardState = { [key: string]: keyof DraftState };
 
 /**
  * @desc Map<zoneName, Map<color, count>
- * @example { "main": {"W": 2, "R": 3}, "side": {"B": 5, "U": 5} }
+ * @example { 'main': {'W': 2, 'R': 3}, 'side': {'B': 5, 'U': 5} }
  */
 const defaultLandDistribution = (): LandDistributionState => ({
   [Zone.main]: {},
@@ -50,6 +101,7 @@ type LandDistributionState = { [key in Zone]: {[ley: string]: number } }
 export class GameState extends EventEmitter {
   private cardState: CardState;
   private zoneState: ZoneState;
+  public draftState: withSort<Card>;
   private landDistribution: LandDistributionState;
   private pickCardIds: CardId[];
   private burnCardIds: CardId[];
@@ -70,16 +122,20 @@ export class GameState extends EventEmitter {
     this.cardState = state;
     this.landDistribution = landDistribution;
     this.zoneState = defaultZoneState();
+    this.draftState = _cloneDeep(initialDraftState);
     this.pickCardIds = pickCardIds;
     this.burnCardIds = burnCardIds;
   }
 
   /**
    * @param zoneName
-   * @returns {Card[]} the cards present in the zone
+   * @returns {Card[]} all of the the cards present in the zone.
    */
   get(zoneName: Zone): Card[] {
     return this.zoneState[zoneName];
+  }
+  getColumn(zoneName: keyof DraftState, columnIndex: number): Card[] {
+    return this.draftState.state[zoneName][columnIndex].items;
   }
   getAutopickCardIds(){
     return this.pickCardIds;
@@ -90,32 +146,67 @@ export class GameState extends EventEmitter {
 
   countCardsBy(zoneName: Zone, fun: (card: Card) => string) {
     const zone = this.get(zoneName);
-    return countBy(zone, fun);
+    return _countBy(zone, fun);
   }
 
   pack(cards: Card[]) {
-    this.zoneState[Zone.pack] = cards;
+    this.draftState.state.pack.push({ id: '', items: cards });
     this.updState();
   }
 
-  add(zoneName: Zone, card: Card) {
-    const zone = this.get(zoneName);
-    zone.push(card);
+  // TODO: handle changing sort
+  add(zoneName: keyof DraftState, card: Card) {
+    console.log(JSON.stringify(card));
+    const zone = this.draftState.state[zoneName];
+    zone[Math.min(card.cmc, zone.length - 1)].items.push(card);
     if (card.cardId) {
       this.cardState[card.cardId] = zoneName;
     }
   }
 
-  move(fromZone: Zone, toZone: Zone, card: Card) {
-    const src = this.get(fromZone);
-    const cardIndex = findIndex(src, card);
-    pullAt(src, cardIndex);
-    this.add(toZone, card);
-    this.updState();
+  moveCard(
+    srcZone: keyof DraftState, srcColumnId: number,
+    destZone: keyof DraftState, destColumnId: number,
+    card: Card,
+  ) {
+    const sourceKeys = [srcZone, srcColumnId, 'items'];
+    let sourceCardList: Card[] | undefined = _get(this.draftState.state, sourceKeys);
+    const destinationKeys = [destZone, destColumnId, 'items'];
+    let destinationCardList: Card[] | undefined = _get(this.draftState.state, destinationKeys);
+
+    if (sourceCardList === undefined) {
+      throw Error(`source(${srcZone}-${srcColumnId}) not found.`);
+    } else if (destinationCardList === undefined) {
+      throw Error(`destination(${destZone}-${destColumnId}) not found.`);
+    } else if (legalMoves.includes(`${srcZone}-${destZone}`)) {
+      sourceCardList = sourceCardList.filter((c) => !_isEqual(card, c));
+      destinationCardList.push(card);
+      _set(this.draftState.state, sourceKeys, sourceCardList);
+      _set(this.draftState.state, destinationKeys, destinationCardList);
+      this.updState();
+    }
+  }
+
+  reorderCard(
+    zone: keyof DraftState, columnId: string,
+    srcIndex: number, destIndex: number,
+    card: Card,
+  ) {
+    const columnKeys = [zone, columnId, 'items'];
+    let sourceCardList: Card[] | undefined = _get(this.draftState.state, columnKeys);
+
+    if (sourceCardList === undefined) {
+      throw Error(`source(${zone}-${columnId}) not found.`);
+    } else if (legalMoves.includes(`${zone}-${zone}`)) {
+      sourceCardList.splice(srcIndex, 1);
+      sourceCardList.splice(destIndex, 0, card);
+      _set(this.draftState.state, columnKeys, sourceCardList);
+      this.updState();
+    }
   }
 
   /**
-   *
+   * TODO: migrate to new draftState
    * @param zone
    * @param cards
    */
@@ -171,14 +262,15 @@ export class GameState extends EventEmitter {
     const cards = this.get(zoneName);
     const groups = _.group(cards, sort);
     for (const key in groups) {
-      _.sort(groups[key], sortLandsBeforeNonLands, "color", "cmc", "name");
+      _.sort(groups[key], sortLandsBeforeNonLands, 'color', 'cmc', 'name');
     }
     return Key(groups, sort);
   }
 
   updState() {
-    this.emit("updateGameState", {
+    this.emit('updateGameState', {
       state: this.cardState,
+      draftState: this.draftState,
       landDistribution: this.landDistribution,
       pickCardIds: this.pickCardIds,
       picksPerPack: this.picksPerPack,
@@ -187,7 +279,7 @@ export class GameState extends EventEmitter {
   }
 
   updateSelection() {
-    this.emit("setSelected", {
+    this.emit('setSelected', {
       picks: this.pickCardIds,
       burns: this.burnCardIds
     });
@@ -216,7 +308,7 @@ export class GameState extends EventEmitter {
   }
 
   resetPack() {
-    this.get(Zone.pack).length = 0;
+    this.draftState.state.pack[0].items = [];
     this.pickCardIds = [];
     this.burnCardIds = [];
   }
@@ -276,7 +368,7 @@ function Key(groups: { [key: string]: Card[] }, sort: SortType) {
   let arr: Card[];
 
   switch (sort) {
-  case "cmc":
+  case 'cmc':
     arr = [];
     for (let key in groups)
       if (parseInt(key) >= 6) {
@@ -286,23 +378,23 @@ function Key(groups: { [key: string]: Card[] }, sort: SortType) {
 
     if (arr.length) {
       if (groups['6+'] === undefined) {
-        groups["6+"] = [];
+        groups['6+'] = [];
       }
-      groups["6+"].push(...arr);
+      groups['6+'].push(...arr);
     }
     return groups;
 
-  case "color":
+  case 'color':
     keys =
-      ["Colorless", "White", "Blue", "Black", "Red", "Green", "Multicolor"]
+      ['Colorless', 'White', 'Blue', 'Black', 'Red', 'Green', 'Multicolor']
         .filter(x => keys.indexOf(x) > -1);
     break;
-  case "rarity":
+  case 'rarity':
     keys =
-      ["Mythic", "Rare", "Uncommon", "Common", "Basic", "Special"]
+      ['Mythic', 'Rare', 'Uncommon', 'Common', 'Basic', 'Special']
         .filter(x => keys.indexOf(x) > -1);
     break;
-  case "type":
+  case 'type':
     keys = keys.sort();
     break;
   }

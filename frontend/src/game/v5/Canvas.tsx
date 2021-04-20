@@ -10,7 +10,7 @@ import './style.css';
 import { Card } from 'common/src/types/card';
 import { app } from '../../router';
 import { CardBase } from '../card/CardBase';
-import { Zone } from '../../zones';
+import { CardDefault } from '../card/CardDefault';
 
 enum DrawerState {
     CLOSED = '',
@@ -54,18 +54,20 @@ export interface DraftState<C=Card> {
 
 export interface CardListProps<C=Card> {
     cards: C[];
+    zone: keyof DraftState;
+    column: string;
 }
-export const CardList = ({ cards }: CardListProps<Card>) => (
+export const CardList = ({ cards, zone, column }: CardListProps<Card>) => (
     <>
-        {cards.map((card, index) => (
+        {cards.length > 0 ? (cards.map((card, index) => (
             <Draggable key={card.cardId} draggableId={`cardski__${JSON.stringify(card)}`} index={index}>
                 {({ innerRef, draggableProps, dragHandleProps }) => (
                     <div ref={innerRef} {...draggableProps} {...dragHandleProps}>
-                        <div className='faux-card'><CardBase card={card} /></div>
+                        <div className='faux-card'><CardDefault card={card} zoneName={zone} column={column} /></div>
                     </div>
                 )}
             </Draggable>
-        ))}
+        ))): <div style={{ width: '182px' }}></div>}
     </>
 );
 
@@ -85,91 +87,59 @@ export const DroppableContainer = ({ className, children, ...props }: DroppableC
 );
 
 // TODO: handle same card with different instances
-export const onDragEnd = (
-        columnState: DraftState<Card>,
-        setColumnState: (newColumnState: DraftState<Card>) => void,
-) => ({ destination, source, draggableId}: DropResult, provided: ResponderProvided) => {
+export const onDragEnd = async ({ destination, source, draggableId}: DropResult, provided: ResponderProvided) => {
     if (destination) {
         const [, draggedCardJSON] = draggableId.split('__');
-        const draggedCard = JSON.parse(draggedCardJSON);
-
-        const newColumnState = _cloneDeep(columnState);
+        const draggedCard: Card = JSON.parse(draggedCardJSON);
         // parse keys into card lists
 
         const [_srcUiComponent, srcZone, srcColumnId] = source.droppableId.split('-');
-        const sourceKeys = [srcZone, srcColumnId, 'items'];
-        let sourceCardList: string[] | undefined = _get(newColumnState, sourceKeys);
         const [_destUiComponent, destZone, destColumnId] = destination.droppableId.split('-');
-        const destinationKeys = [destZone, destColumnId, 'items'];
-        let destinationCardList: string[] | undefined = _get(newColumnState, destinationKeys);
 
-        // if (source.droppableId === destination.droppableId) {
-        //     // reorder given card list
-        //     app.state.gameState.reorderCard(srcZone as any, srcColumnId, source.index, destination.index, draggedCard);
-        // } else {
-        //     // move card from source to destination list
-        //     app.state.gameState.moveCard(srcZone as any, srcColumnId, destZone as any, destColumnId, draggedCard);
-        // }
-        // return;
-
-        if (sourceCardList === undefined) {
-            throw Error(`source(${source.droppableId}) not found.`);
-
-        } else if (destinationCardList === undefined) {
-            throw Error(`destination(${destination.droppableId}) not found.`);
-        }
-        else if (legalMoves.includes(`${srcZone}-${destZone}`)) {
-            if (source.droppableId === destination.droppableId) {
-                // reorder given card list
-                destinationCardList.splice(source.index, 1);
-                destinationCardList.splice(destination.index, 0, draggedCard);
-            } else {
-                // move card from source to destination list
-                sourceCardList = sourceCardList.filter((card) => !_isEqual(card, draggedCard));
-                destinationCardList.push(draggedCard);
-            }
+        if (source.droppableId === destination.droppableId) {
+            // reorder given card list
+            app.reorderCard(srcZone as any, srcColumnId, source.index, destination.index, draggedCard);
         } else {
-            console.debug(`illegal move from ${srcZone} to ${destZone}. Ignoring`);
+            // move card from source to destination list
+            // TODO: Execute synchronously after moveCard
+            if(srcZone === 'pack') {
+                // This only handles the single pick case.
+                // TODO: Handle multi-pick
+                // - can picks be undone?
+                // - can multipick even drag from packs? TODO: disable dragging
+                if (app.state.burnsPerPack === 0 && app.state.picksPerPack === 1) {
+                    app.state.gameState.updateCardPick(draggedCard.cardId, app.state.picksPerPack);
+                    app.state.gameState.resetPack();
+                    app.update();
+                    app.moveCard(srcZone, Number.parseInt(srcColumnId), destZone as any, Number.parseInt(destColumnId), draggedCard);
+                } else {
+                    console.error('multipick not supported through drag and drop yet.');
+                }
+            } else {
+                app.moveCard(srcZone as any, Number.parseInt(srcColumnId), destZone as any, Number.parseInt(destColumnId), draggedCard);
+            }
         }
-        _set(newColumnState, sourceKeys, sourceCardList);
-        _set(newColumnState, destinationKeys, destinationCardList);
-        setColumnState(newColumnState);
     }
 }   
 
 const stringCards = ['a!', 'b@', 'c#', 'd$', 'e%', 'f^', 'g&', 'h(', 'i)', 'j_', 'k+'];
 export const Canvas = () => {
-    // const { draftState } = app.state.gameState;
+    const { draftState } = app.state.gameState;
     const [drawerState, setDrawerState] = useState<DrawerState>(DrawerState.CLOSED);
-    const [columnState, setColumnState] = useState<DraftState<Card>>({
-        pack: {
-            '0': { id: '0', items: Object.values(app.getSortedZone(Zone.pack)).flat() },
-        },
-        main: {
-            '0': {  id: '0', items: [] },
-            '1': {  id: '1', items: [] },
-            '2': {  id: '2', items: [] },
-            '3': {  id: '3', items: [] },
-            '4': {  id: '4', items: [] },
-        },
-        side: { '0': { id: '0', items: [] } },
-        burn: { '0': { id: '0', items: [] } },
-    });
-    console.debug(JSON.stringify(columnState));
 
     let drawerComponent = null;
     switch (drawerState) {
     case DrawerState.SIDEBOARD:
         drawerComponent = (
             <DroppableContainer className='drawer-inner side' droppableId={`column-side-0`} isDropDisabled={drawerState !== DrawerState.SIDEBOARD}>
-                <CardList cards={columnState.side['0'].items} />
+                <CardList cards={draftState.state.side[0].items} zone='side' column='0' />
             </DroppableContainer>
         );
         break;
     case DrawerState.BURN:
         drawerComponent = (
             <DroppableContainer className='drawer-inner burn' droppableId={`column-burn-0`} isDropDisabled={drawerState !== DrawerState.BURN}>
-                <CardList cards={columnState.burn['0'].items} />
+                <CardList cards={draftState.state.burn[0].items} zone='burn' column='0' />
             </DroppableContainer>
         );
         break;
@@ -183,17 +153,19 @@ export const Canvas = () => {
     }
 
     return (
-        <DragDropContext onDragEnd={onDragEnd(columnState, setColumnState)}>
+        <DragDropContext onDragEnd={onDragEnd}>
             <div className='draft-container'>
                 <div className='primary-frame'>
-                    <DroppableContainer isDropDisabled droppableId={`column-pack-0`} direction='horizontal'>
-                        <CardList cards={columnState.pack['0'].items} />
-                    </DroppableContainer>
-
+                    {draftState.state.pack[0] && (
+                        <DroppableContainer isDropDisabled droppableId={`column-pack-0`} direction='horizontal'>
+                            <CardList cards={draftState.state.pack[0].items} column='0' zone='pack' />
+                        </DroppableContainer>
+                    )}
+                    
                     <div className='main-container'>
-                        {Object.values(columnState.main).map((column) => (
-                            <DroppableContainer className='column' key={column.id} droppableId={`column-main-${column.id}`}>
-                                <CardList cards={column.items} />
+                        {Object.values(draftState.state.main).map((column, index) => (
+                            <DroppableContainer className='column' key={column.id} droppableId={`column-main-${index}`}>
+                                <CardList cards={column.items} column={column.id} zone='main' />
                             </DroppableContainer>
                         ))}
                     </div>

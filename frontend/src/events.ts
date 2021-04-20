@@ -1,4 +1,5 @@
 import _ from "./utils";
+import _cloneDeep from 'lodash/cloneDeep';
 // @ts-ignore
 import {vanillaToast} from "vanilla-toast";
 import DOMPurify from "dompurify";
@@ -12,7 +13,7 @@ import { Deck, DeckRow } from "common/src/types/deck";
 import { Message } from "common/src/types/message";
 import { SetType } from "./app";
 import { Cube } from "common/src/types/cube";
-import { GameOptions, GameType } from "common/src/types/game";
+import { DraftState, GameOptions, GameType, withSort } from "common/src/types/game";
 
 /**
  * @desc this is the list of all the events that can be triggered by the app
@@ -21,6 +22,7 @@ import { GameOptions, GameType } from "common/src/types/game";
  */
 export const events = {
   add(card: Card) {
+    throw Error('Event(add) is deprecated');
     const zoneName = app.state.side ? Zone.side : Zone.main;
     app.state.gameState.add(zoneName, card);
     app.state.gameState.resetPack();
@@ -40,19 +42,20 @@ export const events = {
       app.send("confirmSelection");
     }
   },
-  click(zoneName: Zone, card: Card, e: MouseEvent) {
-    if (zoneName === Zone.pack) {
+  clickButForDraftState(zoneName: keyof DraftState, srcColumn: string, card: Card) {
+    if (zoneName === 'pack') {
       clickPack(card);
-      return;
+    } else {
+      const dest = zoneName === Zone.side ? Zone.main : Zone.side;
+
+      app.moveCard(
+        zoneName,
+        Number.parseInt(srcColumn),
+        dest,
+        dest === 'side' ? 0 : Math.min(card.cmc, 6), // TODO: Add to zone's default column.
+        card
+      )
     }
-
-    const dst = e.shiftKey
-      ? zoneName === Zone.junk ? Zone.main : Zone.junk
-      : zoneName === Zone.side ? Zone.main : Zone.side;
-
-    app.state.gameState.move(zoneName, dst, card);
-
-    app.update();
   },
   copy() {
     const {exportDeckFormat: format, exportDeckFilename: filename} = app.state;
@@ -176,10 +179,10 @@ export const events = {
     app.state.picksPerPack = event.currentTarget.value;
     app.update();
   },
-  pool(cards: Card[]) {
-    const zoneName = app.state.side ? Zone.side : Zone.main;
-    app.state.gameState.addToPool(zoneName, cards);
+  draftState(draftState: withSort<Card>) {
+    app.state.gameState.draftState = _cloneDeep(draftState);
     app.update();
+    app.state.gameState.updState();
   },
   land(zoneName: Zone, color: string, e: any) {
     const n = Number(e.target.value);

@@ -1,18 +1,19 @@
 import React from 'react';
-import _ from "./utils";
-import { EventEmitter } from "events";
-import {STRINGS} from "./config";
-import eio, { SocketOptions } from "engine.io-client";
-import {times, constant} from "lodash";
-import { GameState } from "./gamestate";
+import _ from './utils';
+import { EventEmitter } from 'events';
+import {STRINGS} from './config';
+import eio, { SocketOptions } from 'engine.io-client';
+import {times, constant} from 'lodash';
+import { GameState } from './gamestate';
 import { Zone } from './zones';
 import { ExportFormat } from 'common/src/types/export';
 import { Message } from 'common/src/types/message';
 import { Log } from 'common/src/types/log';
 import { TimerLength } from 'common/src/types/state';
+import { DraftState, SortType } from 'common/src/types/game';
+import { Card } from 'common';
 
-export type SetType = "setsDraft" | "setsSealed" | "setsDecadentDraft";
-export type SortType = "cmc" | "color" | "rarity" | "type";
+export type SetType = 'setsDraft' | 'setsSealed' | 'setsDecadentDraft';
 export interface MTGJsonVersion {
   version: string;
   date: string;
@@ -110,24 +111,24 @@ export class App extends EventEmitter {
     roomInfo: [],
 
     seats: 8,
-    title: "",
-    gameId: "",
+    title: '',
+    gameId: '',
     isPrivate: true,
     modernOnly: false,
     totalChaos: false,
     chaosDraftPacksNumber: 3,
     chaosSealedPacksNumber: 6,
-    gametype: "draft",
+    gametype: 'draft',
     picksPerPack: 1,
     burnsPerPack: 0,
     DoubleMasters: -1,
-    gamesubtype: "regular",
+    gamesubtype: 'regular',
     sets: [],
     setsDraft: [],
     setsSealed: [],
     setsDecadentDraft: [],
     availableSets: {},
-    list: "",
+    list: '',
     cards: 15,
     packs: 3,
     cubePoolSize: 90,
@@ -135,7 +136,7 @@ export class App extends EventEmitter {
     addBots: true,
     shufflePlayers: true,
     useTimer: true,
-    timerLength: "Moderate", // Fast Moderate or Slow
+    timerLength: 'Moderate', // Fast Moderate or Slow
 
     beep: true,
     notify: false,
@@ -146,20 +147,20 @@ export class App extends EventEmitter {
     deckSize: 40,
 
     // export deck
-    exportDeckFormat: "cockatrice",
-    exportDeckFilename: "filename",
+    exportDeckFormat: 'cockatrice',
+    exportDeckFilename: 'filename',
 
     side: false,
-    sort: "rarity",
+    sort: 'rarity',
     log: {},
-    cardSize: "normal",
-    cardLang: "en",
+    cardSize: 'normal',
+    cardLang: 'en',
     game: {},
     mtgJsonVersion: {
-      version: "0.0.0",
-      date: "1970-01-01"
+      version: '0.0.0',
+      date: '1970-01-01'
     },
-    boosterRulesVersion: "",
+    boosterRulesVersion: '',
     messages: [],
     pickNumber: 0,
     packSize: 15,
@@ -243,15 +244,15 @@ export class App extends EventEmitter {
     } else {
       this.state.gameState = new GameState(gameStates[id]);
     }
-    this.state.gameState.on("updateGameState", (gameState) => {
-      this.save("gameStates", {
-          // ...App.state.gameStates,
+    this.state.gameState.on('updateGameState', (gameState) => {
+      this.save('gameStates', {
+          ...this.state.gameStates,
           [id]: gameState
         });
       }
     );
-    this.state.gameState.on("setSelected", (state) => {
-      this.send("setSelected", state);
+    this.state.gameState.on('setSelected', (state) => {
+      this.send('setSelected', state);
     });
   }
 
@@ -304,11 +305,11 @@ export class App extends EventEmitter {
   }
 
   updateGameInfos = ({ type, sets, packsInfo, picksPerPack, burnsPerPack}: any) => {
-    const savename = type === "draft" ? sets[0] + "-draft" : type;
+    const savename = type === 'draft' ? sets[0] + '-draft' : type;
     const date = new Date();
-    const currentTime = date.toISOString().slice(0, 10).replace("T", " ") + "_" + date.toString().slice(16, 21).replace(":", "-");
+    const currentTime = date.toISOString().slice(0, 10).replace('T', ' ') + '_' + date.toString().slice(16, 21).replace(':', '-');
     this.set({
-      exportDeckFilename: `${savename.replace(/\W/, "-")}_${currentTime}`,
+      exportDeckFilename: `${savename.replace(/\W/, '-')}_${currentTime}`,
       game: { type, sets, packsInfo, burnsPerPack },
       picksPerPack,
     });
@@ -326,7 +327,33 @@ export class App extends EventEmitter {
   isSealed = () => /sealed/.test(this.state.game.type);
   isGameFinished = () => this.state.round === -1;
   isDecadentDraft = () => /decadent draft/.test(this.state.game.type);
-  notificationBlocked = () => ["denied", "notsupported"].includes(this.state.notificationResult ?? '');
+  notificationBlocked = () => ['denied', 'notsupported'].includes(this.state.notificationResult ?? '');
+
+  moveCard = (srcZone: keyof DraftState, srcColumnIndex: number, destZone: keyof DraftState, destColumnIndex: number, card: Card) => {
+    // Local state
+    this.state.gameState.moveCard(srcZone, srcColumnIndex, destZone, destColumnIndex, card);
+    // Backend state
+    this.send('moveCard', {
+      srcZone,
+      srcColumnIndex,
+      destZone,
+      destColumnIndex,
+      card,
+    })
+  };
+
+  reorderCard = (zone: keyof DraftState, columnIndex: string, sourceIndex: number, destinationIndex: number, card: Card) => {
+    // Local state
+    this.state.gameState.reorderCard(zone, columnIndex, sourceIndex, destinationIndex, card);
+    // Backend state
+    this.send('reorderCard', {
+      srcZone: zone,
+      srcColumnId: Number.parseInt(columnIndex),
+      sourceIndex,
+      destinationIndex,
+      card,
+    });
+  }
 }
 
 // //==========================================================================
@@ -350,24 +377,24 @@ export class App extends EventEmitter {
 //     roomInfo: [],
 
 //     seats: 8,
-//     title: "",
-//     gameId: "",
+//     title: '',
+//     gameId: '',
 //     isPrivate: true,
 //     modernOnly: false,
 //     totalChaos: false,
 //     chaosDraftPacksNumber: 3,
 //     chaosSealedPacksNumber: 6,
-//     gametype: "draft",
+//     gametype: 'draft',
 //     picksPerPack: 1,
 //     burnsPerPack: 0,
 //     DoubleMasters: -1,
-//     gamesubtype: "regular",
+//     gamesubtype: 'regular',
 //     sets: [],
 //     setsDraft: [],
 //     setsSealed: [],
 //     setsDecadentDraft: [],
 //     availableSets: {},
-//     list: "",
+//     list: '',
 //     cards: 15,
 //     packs: 3,
 //     cubePoolSize: 90,
@@ -375,7 +402,7 @@ export class App extends EventEmitter {
 //     addBots: true,
 //     shufflePlayers: true,
 //     useTimer: true,
-//     timerLength: "Moderate", // Fast Moderate or Slow
+//     timerLength: 'Moderate', // Fast Moderate or Slow
 
 //     beep: true,
 //     notify: false,
@@ -386,20 +413,20 @@ export class App extends EventEmitter {
 //     deckSize: 40,
 
 //     // export deck
-//     exportDeckFormat: "cockatrice",
-//     exportDeckFilename: "filename",
+//     exportDeckFormat: 'cockatrice',
+//     exportDeckFilename: 'filename',
 
 //     side: false,
-//     sort: "rarity",
+//     sort: 'rarity',
 //     log: {},
-//     cardSize: "normal",
-//     cardLang: "en",
+//     cardSize: 'normal',
+//     cardLang: 'en',
 //     game: {},
 //     mtgJsonVersion: {
-//       version: "0.0.0",
-//       date: "1970-01-01"
+//       version: '0.0.0',
+//       date: '1970-01-01'
 //     },
-//     boosterRulesVersion: "",
+//     boosterRulesVersion: '',
 //     messages: [],
 //     pickNumber: 0,
 //     packSize: 15,
@@ -422,13 +449,13 @@ export class App extends EventEmitter {
 //     },
 
 //     get notificationBlocked() {
-//       return ["denied", "notsupported"].includes(App.state.notificationResult);
+//       return ['denied', 'notsupported'].includes(App.state.notificationResult);
 //     }
 //   },
 //   init(router) {
-//     App.on("set", App.set);
-//     App.on("error", App.error);
-//     App.on("route", App.route);
+//     App.on('set', App.set);
+//     App.on('error', App.error);
+//     App.on('route', App.route);
 
 //     App.restore();
 //     App.connect();
@@ -437,9 +464,9 @@ export class App extends EventEmitter {
 //   register(component) {
 //     App.connect();
 
-//     App.on("set", App.set);
-//     App.on("error", App.error);
-//     App.on("route", App.route);
+//     App.on('set', App.set);
+//     App.on('error', App.error);
+//     App.on('route', App.route);
 
 //     App.component = component;
 //   },
@@ -467,7 +494,7 @@ export class App extends EventEmitter {
 //     };
 //     if(!this.ws) {
 //       this.ws = eio(location.href, options);
-//       this.ws.on("message", message);
+//       this.ws.on('message', message);
 //     }
 //   },
 //   send(...args) {
@@ -481,19 +508,19 @@ export class App extends EventEmitter {
 //     } else {
 //       App.state.gameState = new GameState(gameStates[id]);
 //     }
-//     App.state.gameState.on("updateGameState", (gameState) => {
-//       App.save("gameStates", {
+//     App.state.gameState.on('updateGameState', (gameState) => {
+//       App.save('gameStates', {
 //         // ...App.state.gameStates,
 //         [id]: gameState
 //       });
 //     });
-//     App.state.gameState.on("setSelected", (state) => {
-//       App.send("setSelected", state);
+//     App.state.gameState.on('setSelected', (state) => {
+//       App.send('setSelected', state);
 //     });
 //   },
 //   error(err) {
 //     App.err = err;
-//     App.route("");
+//     App.route('');
 //   },
 //   route(path) {
 //     if (path === location.hash.slice(1))
@@ -553,11 +580,11 @@ export class App extends EventEmitter {
 //     return { requestChange, value };
 //   },
 //   updateGameInfos({type, sets, packsInfo, picksPerPack, burnsPerPack}) {
-//     const savename = type === "draft" ? sets[0] + "-draft" : type;
+//     const savename = type === 'draft' ? sets[0] + '-draft' : type;
 //     const date = new Date();
-//     const currentTime = date.toISOString().slice(0, 10).replace("T", " ") + "_" + date.toString().slice(16, 21).replace(":", "-");
+//     const currentTime = date.toISOString().slice(0, 10).replace('T', ' ') + '_' + date.toString().slice(16, 21).replace(':', '-');
 //     App.set({
-//       exportDeckFilename: `${savename.replace(/\W/, "-")}_${currentTime}`,
+//       exportDeckFilename: `${savename.replace(/\W/, '-')}_${currentTime}`,
 //       game: { type, sets, packsInfo, burnsPerPack },
 //       picksPerPack,
 //     });

@@ -6,11 +6,11 @@ import {getCardSrc, getFallbackSrc} from "../../cardimage";
 import { app } from "../../router";
 import "./CardBase.scss"
 import { Card } from "common/src/types/card";
-import { Zone } from "../../zones";
+import { DraftState } from "common/src/types/game";
 
 interface CardBaseProps {
   // TODO: REmove
-  zoneName?: Zone;
+  zoneName?: keyof DraftState;
   card: Card;
   children?: React.ReactNode;
 }

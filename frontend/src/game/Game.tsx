@@ -15,6 +15,7 @@ import {STRINGS} from "../config";
 import {vanillaToast} from "vanilla-toast";
 import "vanilla-toast/vanilla-toast.css";
 import { Zone } from "../zones";
+import { Canvas } from "./v5/Canvas";
 
 interface GameProps {
   id: string;
@@ -56,7 +57,7 @@ export default class Game extends Component<GameProps> {
             <DeckSettings/>
             <GameSettings/>
           </div>
-          <CardsZone/>
+          <Canvas />
         </div>
         {app.state.chat && <Chat/>}
       </div>

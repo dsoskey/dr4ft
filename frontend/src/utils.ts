@@ -1,8 +1,8 @@
-import capitalize from "lodash/capitalize";
-import { SortType } from "./app";
+import capitalize from 'lodash/capitalize';
+import { SortType } from 'common/src/types/game';
 import { Card } from 'common/src/types/card'
 
-export const toTitleCase = (sentence: string = '', separator=" ") => {
+export const toTitleCase = (sentence: string = '', separator=' ') => {
   const words = sentence.split(separator);
   const capitalized = words.map(capitalize);
   return capitalized.join(separator);

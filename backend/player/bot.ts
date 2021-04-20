@@ -1,16 +1,16 @@
-import { sample, pull, times } from "lodash";
+import { sample, pull, times } from 'lodash';
 
-import { Player } from "./player";
-import { logger } from "../logger";
-import { Card } from "../../common/src/types/card";
+import { Player } from './player';
+import { logger } from '../logger';
+import { Card } from '../../common/src/types/card';
 
 export default class Bot extends Player {
   constructor(picksPerPack: number, burnsPerPack: number, gameId: string) {
     super({
       isBot: true,
       isConnected: true,
-      name: "bot",
-      id: "",
+      name: 'bot',
+      id: '',
       gameId,
       picksPerPack,
       burnsPerPack,
@@ -34,7 +34,7 @@ export default class Bot extends Player {
       pull(pack, randomPick);
     });
 
-    this.emit("pass", pack);
+    this.emit('pass', pack);
   }
 
   handleTimeout = () => {}

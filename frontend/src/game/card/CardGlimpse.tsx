@@ -7,11 +7,12 @@ import { CardDefault } from "./CardDefault"
 import { SelectionState } from "./SelectionState"
 import "./CardGlimpse.scss"
 import { Card } from "common/src/types/card";
+import { DraftState } from "../v5/Canvas";
 
 interface CardGlimpsProps {
   card: Card;
-  zoneName: Zone;
-  
+  zoneName: keyof DraftState;
+  column: string;
 }
 export class CardGlimpse extends Component<CardGlimpsProps> {
   constructor (props: CardGlimpsProps) {
@@ -22,8 +23,9 @@ export class CardGlimpse extends Component<CardGlimpsProps> {
   }
 
   onClickPickCard (e: any) {
+    const { zoneName, column, card } = this.props;
     e.stopPropagation();
-    app.emit("click", this.props.zoneName, this.props.card);
+    app.emit("clickButForDraftState", zoneName, column, card);
   }
 
   onClickBurnCard (e: any) {
@@ -32,7 +34,7 @@ export class CardGlimpse extends Component<CardGlimpsProps> {
   }
 
   render () {
-    const {zoneName, card} = this.props;
+    const {zoneName, card, column} = this.props;
 
     const CardComponent = zoneName === Zone.pack ? CardBase : CardDefault
     const isPick = zoneName === Zone.pack && app.state.gameState.isPick(card.cardId);
@@ -40,7 +42,7 @@ export class CardGlimpse extends Component<CardGlimpsProps> {
 
     return (
       <div className='CardGlimpse' onClickCapture={() => {}}>
-        <CardComponent card={card} zoneName={zoneName}>
+        <CardComponent card={card} zoneName={zoneName} column={column}>
           <SelectionState isPick={isPick} isBurn={isBurn} />
         </CardComponent>
 

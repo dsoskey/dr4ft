@@ -1,10 +1,10 @@
-import React, {Component, Fragment, RefObject} from "react";
+import React, {Component, Fragment, RefObject} from 'react';
 
-import _ from "../utils";
-import { app } from "../router";
+import _ from '../utils';
+import { app } from '../router';
 
-import "vanilla-toast/vanilla-toast.css";
-import { Message } from "common/src/types/message";
+import 'vanilla-toast/vanilla-toast.css';
+import { Message } from 'common/src/types/message';
 
 interface ChatProps {
 
@@ -17,7 +17,7 @@ export class Chat extends Component<ChatProps> {
   }
 
   scrollToBottom = () => {
-    this.messagesEnd.current?.scrollIntoView({ behavior: "smooth" });
+    this.messagesEnd.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   componentDidMount() {
@@ -29,17 +29,17 @@ export class Chat extends Component<ChatProps> {
   }
 
   onClickChat() {
-    document.getElementById("chat-input")?.focus();
+    document.getElementById('chat-input')?.focus();
   }
 
   render() {
     // must be mounted to receive messages
     return (
-      <div className={"chat-container"}>
+      <div className='chat-container'>
         <div className='chat' onClick={this.onClickChat}>
           <div className='messages' >
             <Messages />
-            <div style={{ float:"left", clear: "both" }} ref={this.messagesEnd} />
+            <div style={{ float:'left', clear: 'both' }} ref={this.messagesEnd} />
           </div>
           <Entry />
         </div>
@@ -74,20 +74,20 @@ const Messages = () => {
 
 const Entry = () => {
   const onKeyDown = (event: any) => {
-    if (event.key !== "Enter")
+    if (event.key !== 'Enter')
       return;
 
     let element = event.target;
     let text = element.value.trim();
-    element.value = "";
+    element.value = '';
 
     if (!text)
       return;
 
-    if (text[0] === "/")
+    if (text[0] === '/')
       command(text.slice(1));
     else
-      app.send("say", text);
+      app.send('say', text);
   };
 
   const command = (raw: string) => {
@@ -96,26 +96,26 @@ const Entry = () => {
     let text, name;
 
     switch(command) {
-    case "name":
-    case "nick":
+    case 'name':
+    case 'nick':
       name = arg.slice(0, 15);
 
       if (!name) {
-        text = "enter a name";
+        text = 'enter a name';
         break;
       }
 
       text = `hello, ${name}`;
-      app.save("name", name);
-      app.send("name", name);
+      app.save('name', name);
+      app.send('name', name);
       break;
     default:
       text = `unsupported command: ${command}`;
     }
 
-    app.emit("command", { text,
+    app.emit('command', { text,
       time: Date.now(),
-      name: ""
+      name: ''
     });
   };
 
@@ -126,21 +126,21 @@ interface MessagesHeaderProps {
   date: string;
 }
 const MessagesHeader = ({date}: MessagesHeaderProps) => (
-  <div style={{textAlign: "center"}}>{date}</div>
+  <div style={{textAlign: 'center'}}>{date}</div>
 );
 
 const MessageComponent = ({time, name, text}: Message) => {
   const date: Date = new Date(time);
-  const hours   = _.pad(2, "0", date.getHours());
-  const minutes = _.pad(2, "0", date.getMinutes());
+  const hours   = _.pad(2, '0', date.getHours());
+  const minutes = _.pad(2, '0', date.getMinutes());
   const timestamp = `${hours}:${minutes}`;
 
   return (
     <div>
       <time>{timestamp}</time>
-      {" "}
+      {' '}
       <span className='name'>{name}</span>
-      {" "}
+      {' '}
       {text}
     </div>
   );

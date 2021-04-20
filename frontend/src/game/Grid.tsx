@@ -72,7 +72,7 @@ const zone = (zoneName: Zone, index: number) => {
         </div>
 
         {
-          cards.length > 0 && zoneName === Zone.pack &&
+          cards.length > 0 && isPackZone &&
             <button
               className="confirm-btn"
               disabled={!canConfirm}
@@ -86,13 +86,13 @@ const zone = (zoneName: Zone, index: number) => {
       <div className="cards">
         {cards.map((card, i) =>
           isPackZone && app.state.burnsPerPack > 0
-            ? <CardGlimpse key={i+zoneName+card.name+card.foil} card={card} zoneName={zoneName} />
-            : <CardDefault key={i+zoneName+card.name+card.foil} card={card} zoneName={zoneName} />
+            ? <CardGlimpse key={i+zoneName+card.name+card.foil} card={card} zoneName='pack' column='' />
+            : <CardDefault key={i+zoneName+card.name+card.foil} card={card} zoneName='pack' column='' />
         )}
 
       </div>
 
-      {cards.length === 0 && zoneName === Zone.pack &&
+      {cards.length === 0 && isPackZone &&
         <h2 className='waiting'>Waiting for the next pack...</h2>
       }
     </div>

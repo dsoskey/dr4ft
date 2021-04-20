@@ -82,11 +82,11 @@ const Zones = ({onMouseOver, zoneNames, onMouseLeave}: ZonesProps) => {
         <div 
           className="card-container"
           key={index}
-          onClick={(e) => app.emit("click", zoneName, card, e)}
+          onClick={(e) => {}}
           onMouseOver={e => onMouseOver(card, e)}
           onMouseLeave={onMouseLeave} >
 
-          <CardBase card={card} zoneName={zoneName} />
+          <CardBase card={card} zoneName='main' />
         </div>
       );
 
