@@ -296,7 +296,7 @@ export const events = {
     });
   },
   hear(message: Message) {
-    console.log(JSON.stringify(message));
+    console.table(JSON.stringify(message));
     app.set({
       messages: [...app.state.messages, message]
     });

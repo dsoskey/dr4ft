@@ -253,6 +253,7 @@ export default class Human extends Player {
       // reset state
       this.selected = { picks: [], burns: [] };
   
+      logger.info(JSON.stringify(this.draftState));
       // @ts-ignore don't know why draft log is both a string rep of the picks and a card object
       this.updateDraftStats(this.draftLog.pack, this.__pool());
   
