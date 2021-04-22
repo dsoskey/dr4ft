@@ -11,7 +11,7 @@ import { Message } from 'common/src/types/message';
 import { Log } from 'common/src/types/log';
 import { TimerLength } from 'common/src/types/state';
 import { DraftState, SortType } from 'common/src/types/game';
-import { Card } from 'common';
+import { Card } from 'common/src/types/card';
 
 export type SetType = 'setsDraft' | 'setsSealed' | 'setsDecadentDraft';
 export interface MTGJsonVersion {
