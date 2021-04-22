@@ -130,7 +130,8 @@ export default class Human extends Player {
         // do the pack passing
         const pack = this.draftState.state.pack.shift();
         this.selected = { picks: [], burns: [] };
-    
+        // WHUT
+        logger.info(JSON.stringify(this.draftState));
         // @ts-ignore don't know why draft log is both a string rep of the picks and a card object
         this.updateDraftStats(this.draftLog.pack, this.__pool());
 
