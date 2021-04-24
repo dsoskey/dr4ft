@@ -7,7 +7,7 @@
 .draft-container {
     width: 100%;
     height: 100%;
-    background-color: aquamarine;
+    /* background-color: aquamarine; */
 }
 
 .primary-frame {
@@ -17,8 +17,8 @@
 }
 .primary-frame > * {
     width: 99%;
-    height: 550px;
-    background-color: darkblue;
+    min-height: 550px;
+    background-color: aquamarine;
     margin-bottom: 10px;
     display: flex;
     flex-direction: row;
@@ -66,7 +66,7 @@
     z-index: 20;
     display: flex;
     flex-direction: row;
-    height: 100%;
+    min-height: 100%;
 }
 .drawer-handle {
     display: flex;
@@ -80,11 +80,14 @@
     transform: rotate(-90deg);
 }
 .drawer-inner {
-    min-width: 300px;
+    /* min-width: 300px; */
+    min-width: calc(var(--card-width) + 20px);
     height: 100%;
 }
 .side {
-    background-color: thistle;
+    background-color: darkblue;
+    color: ghostwhite;
+    padding: 10px;
 }
 .burn {
     background-color: coral;
@@ -93,7 +96,7 @@
     background-color: burlywood;
 }
 .faux-card {
-    background-color: yellowgreen;
+    background-color: royalblue;
     height: var(--card-height);
     width: var(--card-width);
     margin: 10px

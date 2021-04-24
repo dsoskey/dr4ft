@@ -9,8 +9,7 @@ export const GameSettings = () => (
     <fieldset className='fieldset'>
       <legend className='legend game-legend'>Settings</legend>
       <span>
-        <Checkbox side="left" text="Show chat" link="chat" />
-        {!app.isSealed() &&
+        {/* {!app.isSealed() &&
           <Checkbox side="left" text="Enable notifications on new packs" link="beep" />
         }
         {!app.isSealed() &&
@@ -21,14 +20,11 @@ export const GameSettings = () => (
               disabled={!app.state.beep || app.notificationBlocked()}
               onChange={app._emit("notification")} />
           </div>
-        }
-        {!app.isSealed() &&
-          <Checkbox side="left" text="Add picks to sideboard" link="side" />}
-        {!app.isSealed() &&
+        } */}
+        {/* {!app.isSealed() &&
           <Checkbox side="left" text="Hide your picks" link="hidepicks" />
-        }
-        <Checkbox side="left" text="Use column view" link="cols" />
-        <SortCards />
+        } */}
+        {/* <SortCards /> */}
         <CardsImageQuality />
         {app.state.cardSize != "text" && <CardsImageLanguage />}
       </span>

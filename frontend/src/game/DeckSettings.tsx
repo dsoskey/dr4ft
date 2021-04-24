@@ -13,7 +13,7 @@ export const DeckSettings = () => {
   if (app.didGameStart() || app.isGameFinished()) {
     return (
       <div className='DeckSettings'>
-        <LandsPanel />
+        {/* <LandsPanel /> */}
         <ExportDeckPanel />
 
         {

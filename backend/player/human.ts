@@ -118,9 +118,11 @@ export default class Human extends Player {
     let destinationCardList: Card[] | undefined = get(this.draftState.state, destinationKeys);
 
     if (sourceCardList === undefined) {
-      throw Error(`source(${srcZone}-${srcColumnIndex}) not found.`);
+      logger.error(`move card: source(${srcZone}-${srcColumnIndex}) not found.`)
+      // throw Error(`source(${srcZone}-${srcColumnIndex}) not found.`);
     } else if (destinationCardList === undefined) {
-      throw Error(`destination(${destZone}-${destColumnIndex}) not found.`);
+      logger.error(`move card: destination(${destZone}-${destColumnIndex}) not found.`);
+      // throw Error(`destination(${destZone}-${destColumnIndex}) not found.`);
     } else if (legalMoves.includes(`${srcZone}-${destZone}`)) {
       sourceCardList = sourceCardList.filter((c) => !isEqual(card, c));
       destinationCardList.push(card);
@@ -144,7 +146,8 @@ export default class Human extends Player {
     let sourceCardList: Card[] | undefined = get(this.draftState.state, columnKeys);
 
     if (sourceCardList === undefined) {
-      throw Error(`source(${zone}-${columnIndex}) not found.`);
+      logger.error(`reorder card: source(${zone}-${columnIndex}) not found.`)
+      // throw Error(`source(${zone}-${columnIndex}) not found.`);
     } else if (legalMoves.includes(`${zone}-${zone}`)) {
       sourceCardList.splice(srcIndex, 1);
       sourceCardList.splice(destIndex, 0, card);

@@ -131,14 +131,14 @@ export const Canvas = () => {
     switch (drawerState) {
     case DrawerState.SIDEBOARD:
         drawerComponent = (
-            <DroppableContainer className='drawer-inner side' droppableId={`column-side-0`} isDropDisabled={drawerState !== DrawerState.SIDEBOARD}>
+            <DroppableContainer className='column drawer-inner side' droppableId={`column-side-0`} isDropDisabled={drawerState !== DrawerState.SIDEBOARD}>
                 <CardList cards={draftState.state.side[0].items} zone='side' column='0' />
             </DroppableContainer>
         );
         break;
     case DrawerState.BURN:
         drawerComponent = (
-            <DroppableContainer className='drawer-inner burn' droppableId={`column-burn-0`} isDropDisabled={drawerState !== DrawerState.BURN}>
+            <DroppableContainer className='column drawer-inner burn' droppableId={`column-burn-0`} isDropDisabled={drawerState !== DrawerState.BURN}>
                 <CardList cards={draftState.state.burn[0].items} zone='burn' column='0' />
             </DroppableContainer>
         );
@@ -156,10 +156,12 @@ export const Canvas = () => {
         <DragDropContext onDragEnd={onDragEnd}>
             <div className='draft-container'>
                 <div className='primary-frame'>
-                    {draftState.state.pack[0] && (
+                    {draftState.state.pack[0] ? (
                         <DroppableContainer isDropDisabled droppableId={`column-pack-0`} direction='horizontal'>
                             <CardList cards={draftState.state.pack[0].items} column='0' zone='pack' />
                         </DroppableContainer>
+                    ) : (
+                        <div>Waiting for next pack!</div>
                     )}
                     
                     <div className='main-container'>
@@ -185,7 +187,8 @@ export const Canvas = () => {
                                 </div>
                             )}
                         </Droppable>
-                        <Droppable droppableId={`button-burn-0`}>
+                        {app.state.burnsPerPack > 0 && (
+                            <Droppable droppableId={`button-burn-0`}>
                             {({ innerRef, droppableProps, placeholder }) => (
                                 <div ref={innerRef} {...droppableProps}>
                                     <button
@@ -197,13 +200,14 @@ export const Canvas = () => {
                                     {placeholder}
                                 </div>
                             )}
-                        </Droppable>
-                        <button
+                            </Droppable>
+                        )}
+                        {/* <button
                             className={drawerState === DrawerState.CHAT ? 'chatski' : ''}
                             onClick={() => setDrawerState(drawerState === DrawerState.CHAT ? DrawerState.CLOSED : DrawerState.CHAT)}
                         >
                             Chat
-                        </button>
+                        </button> */}
                     </div>
                     {drawerComponent}
                 </div>
