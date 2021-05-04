@@ -232,7 +232,7 @@ export default class Human extends Player {
         }
         pull(pack, card);
         logger.info(`GameID: ${this.gameId}, player ${this.name}, picked: ${card.name}`);
-        this.draftLog.pack.push( ...[`--> ${card.name}`].concat(pack.map(x => `    ${x.name}`)) );
+        this.draftLog.pack.push( [`--> ${card.name}`].concat(pack.map(x => `    ${x.name}`)) );
         this.draftState.state.main[Math.min(card.cmc, this.draftState.state.main.length - 1)].items.push(card);
         const pickcard = card.foil ? '*' + card.name + '*' : card.name ;
         this.picks.push(pickcard);

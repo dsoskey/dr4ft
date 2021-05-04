@@ -5,13 +5,14 @@ import { app } from "../router";
 import { App } from '../app';
 import { Spaced } from "../components/Spaced";
 import { Card } from 'common/src/types/card';
-import { Zone, getZoneDisplayName} from "../zones";
+import { Zone } from "../zones";
 import { CardDefault } from "./card/CardDefault";
 import { CardGlimpse } from "./card/CardGlimpse";
 import "./Grid.scss"
+import { DraftState } from "./v5/Canvas";
 
 interface GridProps {
-  zones: Zone[]
+  zones: Array<keyof DraftState>;
 }
 export const Grid = ({zones}: GridProps) => (
   <div>
@@ -19,12 +20,12 @@ export const Grid = ({zones}: GridProps) => (
   </div>
 );
 
-const getZoneDetails = (bpp: App, zoneName: Zone, cards: Card[]) => {
+const getZoneDetails = (bpp: App, zoneName: keyof DraftState, cards: Card[]) => {
   if (!app.didGameStart()) {
     return 0;
   }
 
-  if (zoneName === Zone.pack) {
+  if (zoneName === 'pack') {
     if (app.isDecadentDraft()) {
       // Only 1 pick in decadent draft.
       return `Pick 1 / 1`;
@@ -37,9 +38,9 @@ const getZoneDetails = (bpp: App, zoneName: Zone, cards: Card[]) => {
   }
 }
 
-const zone = (zoneName: Zone, index: number) => {
+const zone = (zoneName: keyof DraftState, index: number) => {
   const zone = app.getSortedZone(zoneName);
-  const zoneDisplayName = getZoneDisplayName(zoneName);
+  const zoneDisplayName = zoneName;
   const cards = Object.values(zone).flat();
   const isPackZone = zoneName === Zone.pack;
 

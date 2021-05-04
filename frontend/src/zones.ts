@@ -5,12 +5,3 @@ export enum Zone {
   // TODO: Replace with burn
   junk = 'junk'
 }
-
-const ZONE_NAMES = {
-  [Zone.pack]: "Pack",
-  [Zone.main]: "Main Deck",
-  [Zone.side]: "Sideboard",
-  [Zone.junk]: "Junk"
-};
-
-export const getZoneDisplayName = (zoneName: Zone) => ZONE_NAMES[zoneName];

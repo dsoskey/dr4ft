@@ -2,15 +2,16 @@ import React, {Component} from "react";
 import PropTypes from "prop-types";
 
 import { app } from "../router";
-import {getZoneDisplayName, Zone} from "../zones";
 import { Spaced } from "../components/Spaced";
 import {getCardSrc, getFallbackSrc} from "../cardimage";
 import { CardBase } from "./card/CardBase"
 import "./Cols.scss"
 import { Card } from "common/src/types/card";
+import { DraftState } from "common/src/types/game";
+
 
 interface ColsProps {
-  zones: Zone[];
+  zones: Array<keyof DraftState>;
 }
 interface ColsState {
   className: string;
@@ -69,10 +70,10 @@ export class Cols extends Component<ColsProps, ColsState> {
 interface ZonesProps { 
   onMouseOver: (card: Card, e: any) => void;
   onMouseLeave: () => void;
-  zoneNames: Zone[];
+  zoneNames: Array<keyof DraftState>;
 }
 const Zones = ({onMouseOver, zoneNames, onMouseLeave}: ZonesProps) => {
-  const renderZone = (zoneName: Zone) => {
+  const renderZone = (zoneName: keyof DraftState) => {
     const zone = app.getSortedZone(zoneName);
     let sum = 0;
     let cols = [];
@@ -104,7 +105,7 @@ const Zones = ({onMouseOver, zoneNames, onMouseLeave}: ZonesProps) => {
     return (
       <div key={zoneName} className='zone'>
         <h1>
-          <Spaced elements={[getZoneDisplayName(zoneName), sum]}/>
+          <Spaced elements={[zoneName, sum]}/>
         </h1>
         {cols}
       </div>

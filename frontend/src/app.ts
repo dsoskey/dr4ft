@@ -316,11 +316,8 @@ export class App extends EventEmitter {
     });
   }
 
-  getZone = (zone: Zone) => {
-    return this.state.gameState.get(zone);
-  }
-
-  getSortedZone = (zone: Zone) => {
+  /** @deprecated */
+  getSortedZone = (zone: keyof DraftState) => {
     return this.state.gameState.getSortedZone(zone, this.state.sort);
    }
 

@@ -1,7 +1,8 @@
 import { EventEmitter } from "events";
 import { TimerLength } from '../../common/src/types/state';
 import { Card } from '../../common/src/types/card';
-import { DraftState, withSort } from "../../common/src/types/game";
+import { withSort } from "../../common/src/types/game";
+import { Log } from "../../common/src/types/log";
 
 interface PlayerProps {
   id: string;
@@ -18,9 +19,9 @@ export interface SelectedCards<CardRep = string> {
   burns: CardRep[];
 }
 
-interface DraftLog<CardRep = string> {
-  round: { [key: string]: CardRep[] };
-  pack: CardRep[];
+interface DraftLog {
+  round: Log;
+  pack: string[][];
 }
 
 /**

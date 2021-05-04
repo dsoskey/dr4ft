@@ -87,12 +87,12 @@ type CardState = { [key: string]: keyof DraftState };
  * @example { 'main': {'W': 2, 'R': 3}, 'side': {'B': 5, 'U': 5} }
  */
 const defaultLandDistribution = (): LandDistributionState => ({
-  [Zone.main]: {},
-  [Zone.side]: {},
-  [Zone.junk]: {},
-  [Zone.pack]: {},
+  main: {},
+  side: {},
+  pack: {},
+  burn: {}
 });
-type LandDistributionState = { [key in Zone]: {[ley: string]: number } }
+type LandDistributionState = { [key in keyof DraftState]: {[ley: string]: number } }
 
 /**
  * @desc contains the cards in all zone, the pick + burn references and the land distributions
@@ -129,22 +129,22 @@ export class GameState extends EventEmitter {
 
   /**
    * @param zoneName
-   * @returns {Card[]} all of the the cards present in the zone.
+   * @returns {Card[]} deep copy of all of the the cards present in the zone.
    */
-  get(zoneName: Zone): Card[] {
-    return this.zoneState[zoneName];
+  get(zoneName: keyof DraftState): Card[] {
+    return _cloneDeep(this.draftState.state[zoneName].flatMap((col) => col.items));
   }
   getColumn(zoneName: keyof DraftState, columnIndex: number): Card[] {
-    return this.draftState.state[zoneName][columnIndex].items;
+    return _cloneDeep(this.draftState.state[zoneName][columnIndex].items);
   }
   getAutopickCardIds(){
     return this.pickCardIds;
   }
-  countCardsByName(zoneName: Zone, fun = ({name}: Card) => name) {
+  countCardsByName(zoneName: keyof DraftState, fun = ({name}: Card) => name) {
     return this.countCardsBy(zoneName, fun);
   }
 
-  countCardsBy(zoneName: Zone, fun: (card: Card) => string) {
+  countCardsBy(zoneName: keyof DraftState, fun: (card: Card) => string) {
     const zone = this.get(zoneName);
     return _countBy(zone, fun);
   }
@@ -205,60 +205,39 @@ export class GameState extends EventEmitter {
     }
   }
 
-  /**
-   * TODO: migrate to new draftState
-   * @param zone
-   * @param cards
-   */
-  addToPool(zone: Zone, cards: Card[]) {
-    Object.entries(this.landDistribution).forEach(([zoneName, landsRepartition]) => {
-      Object.entries(landsRepartition).forEach(([colorSign, number]) => {
-        // TODO: Feature: selecting basic lands in app.
-        const basicLand = BASIC_LANDS_BY_COLOR_SIGN[colorSign];
-        this._setLands(zoneName as Zone, basicLand, number);
-      });
-    });
-
-    cards
-      .forEach((card) => {
-        const knownZone = this.cardState[card.cardId ?? ''];
-        this.add(knownZone || zone, card);
-      });
-    this.updState();
-  }
-
-  getLandDistribution(zoneName: Zone, color: string) {
+  getLandDistribution(zoneName: keyof DraftState, color: string) {
     return this.landDistribution[zoneName][color] ?? 0;
   }
 
-  _setLands(zoneName: Zone, card: Card, n: number) {
-    const zone = this.get(zoneName);
-    remove(zone, (c) => c.name === card.name);
+  _setLands(zoneName: keyof DraftState, card: Card, n: number) {
+    // TODO: Refactor to use DraftState
+    // const zone = this.get(zoneName);
+    // remove(zone, (c) => c.name === card.name);
     // add n land
-    range(n).forEach(() => zone.push(card));
-    this.landDistribution[zoneName][card.colorIdentity[0]] = n;
+    // range(n).forEach(() => zone.push(card));
+    // this.landDistribution[zoneName][card.colorIdentity[0]] = n;
   }
 
   setLands(zoneName: Zone, color: string, n: number) {
-    this._setLands(zoneName, BASIC_LANDS_BY_COLOR_SIGN[color], n);
+    // this._setLands(zoneName, BASIC_LANDS_BY_COLOR_SIGN[color], n);
     this.updState();
   }
 
   resetLands() {
-    Object.values(COLORS_TO_LANDS_NAME).forEach((basicLandName) => {
-      [Zone.main, Zone.side, Zone.junk].forEach((zoneName) => {
-        remove(this.get(zoneName), ({name}) => basicLandName.toLowerCase() === name.toLowerCase());
-      });
-    });
-    this.landDistribution = defaultLandDistribution();
-    this.updState();
+    // TODO: Refactor to use DraftState
+    // Object.values(COLORS_TO_LANDS_NAME).forEach((basicLandName) => {
+    //   Object.forEach((zoneName: keyof DraftState) => {
+    //     this.draftState.state[zoneName].forEach((col) => {
+    //       remove(, ({name}) => basicLandName.toLowerCase() === name.toLowerCase());
+    //     })
+    //   });
+      
+    // });
+    // this.landDistribution = defaultLandDistribution();
+    // this.updState();
   }
 
-  getMainDeckSize() {
-    return this.get(Zone.main).length;
-  }
-
-  getSortedZone(zoneName: Zone, sort: SortType) {
+  getSortedZone(zoneName: keyof DraftState, sort: SortType) {
     const cards = this.get(zoneName);
     const groups = _.group(cards, sort);
     for (const key in groups) {
@@ -266,6 +245,8 @@ export class GameState extends EventEmitter {
     }
     return Key(groups, sort);
   }
+
+  // getSortedColumn
 
   updState() {
     this.emit('updateGameState', {

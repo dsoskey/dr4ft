@@ -269,7 +269,7 @@ export const events = {
     }
 
     if (colorsToAdd.length > 0) {
-      const mainDeckSize = app.state.gameState.getMainDeckSize();
+      const mainDeckSize = app.state.gameState.draftState.state.main.flatMap((col) => col.items).length;
 
       let j = 0;
       const basicLandsMap: { [key: string]: number } = {};
@@ -352,6 +352,7 @@ const clickPack = (card: Card) => {
   }
 };
 
+// TODO: use draftState
 const hash = () => {
   app.send("hash", {
     main: app.state.gameState.countCardsByName(Zone.main),
@@ -360,8 +361,8 @@ const hash = () => {
 };
 // Why is the hash version of the deck a different type than the collectDeck version??????
 const collectDeck = (): Deck => ({
-  main: collectByName(app.state.gameState.get(Zone.main)),
-  side: collectByName(app.state.gameState.get(Zone.side), true)
+  main: collectByName(app.state.gameState.draftState.state.main.flatMap((col) => col.items)),
+  side: collectByName(app.state.gameState.draftState.state.side.flatMap((col) => col.items), true)
 });
 
 function collectByName (cards: Card[], sideboard = false): DeckRow[] {

@@ -1,13 +1,12 @@
 import React from "react";
-import PropTypes from "prop-types";
-
 import { app } from "../router";
-import {getZoneDisplayName, Zone } from "../zones";
+import { Zone } from "../zones";
 import {COLORS_TO_LANDS_NAME} from "../gamestate";
 import { exportDeck } from "../export";
 
 import "./DeckSettings.scss";
 import { ColorSign } from "common/src/types/card";
+import { DraftState } from "common/src/types/game";
 
 export const DeckSettings = () => {
   if (app.didGameStart() || app.isGameFinished()) {
@@ -62,11 +61,11 @@ const ManaSymbols = () => {
 };
 
 interface LandsRowProps {
-  zoneName: Zone
+  zoneName: keyof DraftState;
 }
 const LandsRow = ({zoneName}: LandsRowProps) => (
   <tr>
-    <td>{getZoneDisplayName(zoneName)}</td>
+    <td>{zoneName}</td>
     {Object.keys(COLORS_TO_LANDS_NAME).map((color, index) =>
       <td key={index}>
         <input
