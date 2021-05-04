@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { CSSProperties, useRef, useState } from 'react';
 import { DragDropContext, Draggable, Droppable, DroppableProps, DropResult, ResponderProvided } from 'react-beautiful-dnd';
 import _get from 'lodash/get';
 import _set from 'lodash/set';
@@ -74,11 +74,12 @@ export const CardList = ({ cards, zone, column }: CardListProps<Card>) => (
 export interface DroppableContainerProps extends Omit<DroppableProps, 'children'> {
     className?: string;
     children: React.ReactNode;
+    style?: CSSProperties;
 }
-export const DroppableContainer = ({ className, children, ...props }: DroppableContainerProps) => (
+export const DroppableContainer = ({ style, className, children, ...props }: DroppableContainerProps) => (
     <Droppable {...props}>
         {({ innerRef, droppableProps, placeholder }) => (
-            <div ref={innerRef} {...droppableProps} className={className}>
+            <div style={style} ref={innerRef} {...droppableProps} className={className}>
                 {children}
                 {placeholder}
             </div>
@@ -152,25 +153,37 @@ export const Canvas = () => {
         break;
     }
 
+    const longestCol = _cloneDeep(app.state.gameState.draftState.state.main).sort(
+        (a, b) => b.items.length - a.items.length
+    )[0].items.length;
+    const mainColHeight = 355 + Math.max(8, longestCol) * 40;
+
     return (
         <DragDropContext onDragEnd={onDragEnd}>
             <div className='draft-container'>
                 <div className='primary-frame'>
-                    {draftState.state.pack[0] ? (
-                        <DroppableContainer isDropDisabled droppableId={`column-pack-0`} direction='horizontal'>
-                            <CardList cards={draftState.state.pack[0].items} column='0' zone='pack' />
-                        </DroppableContainer>
-                    ) : (
-                        <div>Waiting for next pack!</div>
-                    )}
-                    
-                    <div className='main-container'>
-                        {Object.values(draftState.state.main).map((column, index) => (
-                            <DroppableContainer className='column' key={column.id} droppableId={`column-main-${index}`}>
-                                <CardList cards={column.items} column={column.id} zone='main' />
+                    <fieldset className='pack-container fieldset'>
+                        <legend className='legend'>Pack {app.state.round} | Pick {app.state.pickNumber + 1} / {Math.ceil(app.state.packSize / app.state.picksPerPack)}</legend>
+                        {!app.didGameStart() && !app.isGameFinished() && <div>Waiting to start the game</div>}
+                        {app.didGameStart() && draftState.state.pack[0] && (
+                            <DroppableContainer isDropDisabled droppableId={`column-pack-0`} direction='horizontal' className='pack'>
+                                <CardList cards={draftState.state.pack[0].items} column='0' zone='pack' />
                             </DroppableContainer>
+                        )}
+                        {app.didGameStart() && !draftState.state.pack[0] && <div>Waiting for next pack!</div>}
+                    </fieldset>
+                    
+                    <fieldset className='main-container fieldset'>
+                        <legend className='legend'>Main deck</legend>
+                        {Object.values(draftState.state.main).map((column, index) => (
+                            <div className='column-container' key={column.id}>
+                                <div>{column.items.length}</div>
+                                <DroppableContainer style={{ height: `${mainColHeight}px` }} className='column' droppableId={`column-main-${index}`}>
+                                    <CardList cards={column.items} column={column.id} zone='main' />
+                                </DroppableContainer>
+                            </div>
                         ))}
-                    </div>
+                    </fieldset>
                 </div>
                 <div className={`drawer ${drawerState !== DrawerState.CLOSED ? 'open':'close'}`}>
                     <div className='drawer-handle'>

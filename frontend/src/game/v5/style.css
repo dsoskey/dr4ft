@@ -1,13 +1,6 @@
-
-:root {
-    --card-width: 180px;
-    --card-height: 255px;
-}
-
 .draft-container {
     width: 100%;
     height: 100%;
-    /* background-color: aquamarine; */
 }
 
 .primary-frame {
@@ -15,46 +8,48 @@
     flex-direction: column;
     align-items: center;
 }
-.primary-frame > * {
+.primary-frame > fieldset {
     width: 99%;
     min-height: 550px;
-    background-color: aquamarine;
     margin-bottom: 10px;
+}
+.pack {
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
 }
-.primary-frame > :first-child    {
+.primary-frame > :first-child {
     margin-top: 10px;
-}
-.primary-frame {
-    z-index: 10;
 }
 
 .main-container {
     display: flex;
     flex-direction: row;
     justify-content: space-evenly;
+    min-height: 100%;
+}
+.column-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 .column {
-    /* min-width: 19%; */
-    background-color: violet;
+    border: var(--foreground-primary) solid 2px ;
+    border-radius: 10px;
     margin-top: 5px;
-
     margin-bottom: 5px;
-    /* margin-right: 5px; */
+    overflow: hidden;
 }
 .column .faux-card {
     position: relative;
     cursor: grab;
-    padding: 1px;
     margin: 0;
-    margin-bottom: -160px;
-
-    /* box-shadow: 0 -3px rebec capurple; */
+    margin-bottom: -220px;
+    transition: all 0.25s ease-in 0s;
 }
-/* .column .faux-card:not(:hover) {} */
 .column .faux-card:hover {
+    margin-bottom: 0px;
+    transition: all 0.2s ease-out 0s;
     background-color: chartreuse;
 }
 
@@ -99,5 +94,6 @@
     background-color: royalblue;
     height: var(--card-height);
     width: var(--card-width);
-    margin: 10px
+    margin: 10px;
+    border-radius: 8px;
 }

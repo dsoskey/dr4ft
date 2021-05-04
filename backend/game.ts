@@ -454,7 +454,7 @@ export class Game extends Room {
         p.pickNumber = 0;
         const pack = this.pool.shift();
         p.getPack(pack);
-        p.send('set', { packSize: pack.length });
+        p.send('set', { packSize: pack.length, pickNumber: 0 });
       }
     });
 

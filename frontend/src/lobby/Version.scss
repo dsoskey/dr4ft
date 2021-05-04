@@ -1,6 +1,6 @@
 .Version {
   flex-grow: 1;
-  color: #333;
+  color: var(--foreground-primary);
 
   display: grid;
   grid-auto-flow: column;
@@ -9,7 +9,6 @@
   align-content: end;
 
   a {
-    color: #333;
 
     &.code {
       text-decoration: none;
@@ -23,8 +22,8 @@
 
     &:hover {
       color: #fff;
-      background: #089dff;
-      border: 1px solid #089dff;
+      background: var(--foreground-tertiary);
+      border: 1px solid var(--foreground-tertiary);
     }
   }
 

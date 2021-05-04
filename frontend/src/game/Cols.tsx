@@ -119,7 +119,7 @@ interface ImageHelperProps {
   className?: string;
   card?: Card;
 }
-const ImageHelper = ({onMouseEnter, className, card}: ImageHelperProps) => {
+export const ImageHelper = ({onMouseEnter, className, card}: ImageHelperProps) => {
   // This is the on-hover enlarged helper you see in the bottom left when hovering over a card in column view
   if (!card) return <div />
 

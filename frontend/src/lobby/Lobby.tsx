@@ -1,14 +1,14 @@
-import React, {Component} from "react";
+import React, {Component} from 'react';
 
-import { app } from "../router";
-import {STRINGS} from "../config";
+import { app } from '../router';
+import {STRINGS} from '../config';
 
-import Header from "./Header";
-import { JoinPanel } from "./JoinPanel";
-import { NewsPanel } from "./NewsPanel";
-import { CreatePanel } from "./CreatePanel";
-import FileUpload from "./FileUpload";
-import { Version } from "./Version";
+import Header from './Header';
+import { JoinPanel } from './JoinPanel';
+import { NewsPanel } from './NewsPanel';
+import { CreatePanel } from './CreatePanel';
+import FileUpload from './FileUpload';
+import { Version } from './Version';
 
 interface LobbyProps {}
 
@@ -23,10 +23,12 @@ export default class Lobby extends Component {
     const { roomInfo, serverVersion, mtgJsonVersion, boosterRulesVersion } = app.state;
 
     return (
-      <div className="container">
-        <div className="lobby">
-          <Header/>
-          <CreatePanel/>
+      <div className='container'>
+        <div className='lobby'>
+          <div className='lobby-header-container'>
+            <Header/>
+            <CreatePanel/>
+          </div>
           <JoinPanel roomInfo={roomInfo}/>
           <FileUpload />
           <NewsPanel motd={STRINGS.PAGE_SECTIONS.MOTD}/>

@@ -312,6 +312,7 @@ export class App extends EventEmitter {
       exportDeckFilename: `${savename.replace(/\W/, '-')}_${currentTime}`,
       game: { type, sets, packsInfo, burnsPerPack },
       picksPerPack,
+      burnsPerPack,
     });
   }
 

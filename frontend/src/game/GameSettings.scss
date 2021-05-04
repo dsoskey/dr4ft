@@ -9,24 +9,29 @@
       flex-wrap: wrap;
 
       label {
-        background: #fff;
+        background: var(--foreground-secondary);
         padding: 3px 5px 0;
-        border: solid #d0d0d0 1px;
+        border: solid var(--foreground-primary) 1px;
         margin-right: 5px;
 
         display: flex;
         justify-content: flex-start;
 
-        div {
-        }
+
         input {
           display: none;
         }
 
         &.active {
           background: #3a87e5;
-          border: solid #3a87e5 1px;
-          color: #fff;
+          border: solid var(--foreground-secondary) 1px;
+          & > * {
+              color: var(--foreground-primary);
+          }
+        }
+        div {
+          color: var(--foreground-contrast);
+
         }
       }
     }

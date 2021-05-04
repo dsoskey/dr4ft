@@ -332,17 +332,17 @@ export class GameState extends EventEmitter {
   }
 
   isSelectionReady(picksPerPack: number, burnsPerPack: number) {
-    const packLength = this.get(Zone.pack).length;
+    const packLength = this.draftState.state.pack[0].items.length;
 
     if (packLength === (this.pickCardIds.length + this.burnCardIds.length)) {
       return true;
     }
 
-    if (picksPerPack != this.pickCardIds.length) {
+    if (picksPerPack !== this.pickCardIds.length) {
       return false;
     }
 
-    if (burnsPerPack != this.burnCardIds.length) {
+    if (burnsPerPack !== this.burnCardIds.length) {
       return false;
     }
 

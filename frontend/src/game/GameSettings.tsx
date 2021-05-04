@@ -67,6 +67,7 @@ const sizeDisplay = {
   "small": "Low",
   "normal": "Medium",
   "large": "High",
+  'png': 'Best',
 };
 
 const CardsImageQuality = () => (
