@@ -40,7 +40,7 @@
   }
 
   .exports {
-    background: #f0f0f0;
+    background: var(--background-secondary);
     padding: 10px;
     border: 1px solid var(--highlight);
 

@@ -35,6 +35,12 @@ import { DraftState } from '../../common/src/types/game';
     'side-main',
 ];
 
+interface AddEvent<CardRep=Card> {
+  destZone: keyof DraftState;
+  destColumnIndex: number;
+  card: CardRep;
+}
+
 interface MoveEvent {
   srcZone: keyof DraftState;
   srcColumnIndex: number;
@@ -79,6 +85,8 @@ export default class Human extends Player {
     sock.on('confirmSelection', this._confirmSelection.bind(this));
     sock.on('moveCard', this._moveCard.bind(this));
     sock.on('reorderCard', this._reorderCard.bind(this));
+    sock.on('addCard', this._addCard.bind(this));
+    sock.on('batchAddCard', this._batchAddCard.bind(this));
     sock.removeAllListeners('hash');
     sock.on('hash', this._hash.bind(this));
     sock.once('exit', this._farewell.bind(this));
@@ -111,6 +119,32 @@ export default class Human extends Player {
   _confirmSelection() {
     this.confirmSelection();
   }
+  _addCard({ destZone, destColumnIndex, card }: AddEvent) {
+    const destinationKeys = [destZone, destColumnIndex, 'items'];
+    let destinationCardList: Card[] | undefined = get(this.draftState.state, destinationKeys);
+
+    if (destinationCardList === undefined) {
+      logger.error(`add card: destination(${destZone}-${destColumnIndex}) not found.`);
+      // throw Error(`destination(${destZone}-${destColumnIndex}) not found.`);
+    } else {
+      destinationCardList.push(card);
+      set(this.draftState.state, destinationKeys, destinationCardList);
+      this.send('draftState', this.draftState);
+    }
+  }
+  _batchAddCard({ destZone, destColumnIndex, card }: AddEvent<Card[]>) {
+    const destinationKeys = [destZone, destColumnIndex, 'items'];
+    let destinationCardList: Card[] | undefined = get(this.draftState.state, destinationKeys);
+
+    if (destinationCardList === undefined) {
+      logger.error(`batch add card: destination(${destZone}-${destColumnIndex}) not found.`);
+      // throw Error(`destination(${destZone}-${destColumnIndex}) not found.`);
+    } else {
+      destinationCardList.push(...card);
+      set(this.draftState.state, destinationKeys, destinationCardList);
+      this.send('draftState', this.draftState);
+    }
+  }
   _moveCard({ srcZone, srcColumnIndex, destZone, destColumnIndex, card }: MoveEvent) {
     const sourceKeys = [srcZone, srcColumnIndex, 'items'];
     let sourceCardList: Card[] | undefined = get(this.draftState.state, sourceKeys);
@@ -124,6 +158,7 @@ export default class Human extends Player {
       logger.error(`move card: destination(${destZone}-${destColumnIndex}) not found.`);
       // throw Error(`destination(${destZone}-${destColumnIndex}) not found.`);
     } else if (legalMoves.includes(`${srcZone}-${destZone}`)) {
+      // TODO: should probably report when source card isn't present
       sourceCardList = sourceCardList.filter((c) => !isEqual(card, c));
       destinationCardList.push(card);
       set(this.draftState.state, sourceKeys, sourceCardList);

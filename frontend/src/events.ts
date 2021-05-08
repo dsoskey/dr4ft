@@ -1,5 +1,6 @@
 import _ from "./utils";
 import _cloneDeep from 'lodash/cloneDeep';
+import _times from 'lodash/times';
 // @ts-ignore
 import {vanillaToast} from "vanilla-toast";
 import DOMPurify from "dompurify";
@@ -8,12 +9,14 @@ import {range, times, constant} from "lodash";
 import { app } from "./router";
 import { Zone } from "./zones";
 import { exportDeck } from "./export";
-import { Card } from "common/src/types/card";
+import { Card, ColorSign } from "common/src/types/card";
 import { Deck, DeckRow } from "common/src/types/deck";
 import { Message } from "common/src/types/message";
 import { SetType } from "./app";
 import { Cube } from "common/src/types/cube";
 import { DraftState, GameOptions, GameType, withSort } from "common/src/types/game";
+import { generateBasic } from './basiclands';
+import { getLandSuggestion } from "./game/suggestLands";
 
 /**
  * @desc this is the list of all the events that can be triggered by the app
@@ -184,10 +187,23 @@ export const events = {
     app.update();
     app.state.gameState.updState();
   },
-  land(zoneName: Zone, color: string, e: any) {
+  land(zoneName: keyof DraftState, color: ColorSign, e: any) {
     const n = Number(e.target.value);
     app.state.gameState.setLands(zoneName, color, n);
     app.update();
+  },
+  addLandsToPool() {
+    Object.entries(app.state.gameState.landDistribution).forEach(([zone, value]) => {
+      Object.entries(value).forEach(([color, number]) => {
+        const basics = _times(number, () => generateBasic(color as any));
+        app.send('batchAddCard', {
+          destZone: zone,
+          destColumnIndex: 0,
+          card: basics,
+        });
+      });
+    });
+    app.emit('resetLands');
   },
   deckSize(e: any) { // TODO: What events are these?
     const n = Number(e.target.value);
@@ -197,93 +213,7 @@ export const events = {
     app.update();
   },
   suggestLands() {
-    // Algorithm: count the number of mana symbols appearing in the costs of
-    // the cards in the pool, then assign lands roughly commensurately.
-    const colors = ["W", "U", "B", "R", "G"];
-    const colorRegex = /{[^}]+}/g;
-    const manaSymbols: { [key: string]: number } = {};
-    colors.forEach(x => manaSymbols[x] = 0);
-
-    // Count the number of mana symbols of each type.
-    app.state.gameState.get(Zone.main).forEach((card) => {
-      if (!card.manaCost)
-        return;
-      const cardManaSymbols = card.manaCost.match(colorRegex);
-
-      if (cardManaSymbols) {
-        colors.forEach((color) => {
-          Object.values(cardManaSymbols).forEach((symbol) => {
-            // Test to see if '{U}' contains 'U'. This also handles things like
-            // '{G/U}' triggering both 'G' and 'U'.
-            if (symbol.indexOf(color) !== -1)
-              manaSymbols[color] += 1;
-          });
-        });
-      }
-    });
-
-    app.state.gameState.resetLands();
-    // NB: We could set only the sideboard lands of the colors we are using to
-    // 5, but this reveals information to the opponent on Cockatrice (and
-    // possibly other clients) since it tells the opponent the sideboard size.
-    colors.forEach(color => {
-      app.state.gameState.setLands(Zone.side, color, 5);
-    });
-
-    const mainColors = colors.filter(x => manaSymbols[x] > 0);
-    mainColors.forEach(x => manaSymbols[x] = Math.max(3, manaSymbols[x]));
-    mainColors.sort((a, b) => manaSymbols[b] - manaSymbols[a]);
-
-    // Round-robin choose the lands to go into the deck. For example, if the
-    // mana symbol counts are W: 2, U: 2, B: 1, cycle through the sequence
-    // [Plains, Island, Swamp, Plains, Island] infinitely until the deck is
-    // finished.
-    //
-    // This has a few nice effects:
-    //
-    //   * Colors with greater mana symbol counts get more lands.
-    //
-    //   * When in a typical two color deck adding 17 lands, the 9/8 split will
-    //   be in favor of the color with slightly more mana symbols of that
-    //   color.
-    //
-    //   * Every color in the deck is represented, if it is possible to do so
-    //   in the remaining number of cards.
-    //
-    //   * Because of the minimum mana symbol count for each represented color,
-    //   splashing cards doesn't add exactly one land of the given type
-    //   (although the land count may still be low for that color).
-    //
-    //   * The problem of deciding how to round land counts is now easy to
-    //   solve.
-    const manaSymbolsToAdd = mainColors.map(color => manaSymbols[color]);
-    const colorsToAdd: string[] = [];
-    const emptyManaSymbols = () => !manaSymbolsToAdd.every(x => x === 0);
-
-    for (let i = 0; emptyManaSymbols(); i = (i + 1) % mainColors.length) {
-      if (manaSymbolsToAdd[i] === 0) {
-        continue;
-      }
-      colorsToAdd.push(mainColors[i]);
-      manaSymbolsToAdd[i]--;
-    }
-
-    if (colorsToAdd.length > 0) {
-      const mainDeckSize = app.state.gameState.draftState.state.main.flatMap((col) => col.items).length;
-
-      let j = 0;
-      const basicLandsMap: { [key: string]: number } = {};
-      range(app.state.deckSize - mainDeckSize).forEach(() => {
-        const color = colorsToAdd[j];
-        basicLandsMap[color] = ++basicLandsMap[color] || 1;
-        j = (j + 1) % colorsToAdd.length;
-      });
-
-      Object.entries(basicLandsMap).forEach(([color, number]) => {
-        app.state.gameState.setLands(Zone.main, color, number);
-      });
-    }
-
+    app.state.gameState.landDistribution.main = getLandSuggestion(app.state.gameState.get("main"), app.state.deckSize);
     app.update();
   },
   resetLands() {

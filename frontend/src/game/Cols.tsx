@@ -17,6 +17,7 @@ interface ColsState {
   className: string;
   card?: Card;
 }
+/** @deprecated */
 export class Cols extends Component<ColsProps, ColsState> {
   constructor(props: ColsProps) {
     super(props);

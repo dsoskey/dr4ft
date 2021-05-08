@@ -12,7 +12,7 @@ export const DeckSettings = () => {
   if (app.didGameStart() || app.isGameFinished()) {
     return (
       <div className='DeckSettings'>
-        {/* <LandsPanel /> */}
+        <LandsPanel />
         <ExportDeckPanel />
 
         {
@@ -39,6 +39,13 @@ const LandsPanel = () => (
       </tbody>
       <tfoot>
         <SuggestLands />
+        <tr>
+          <td colSpan={4}></td>
+          <td colSpan={2}>
+            <button className='land-suggest-button' onClick={app._emit('addLandsToPool')}>
+              Add Lands</button>
+          </td>
+        </tr>
       </tfoot>
     </table>
   </fieldset>
@@ -73,7 +80,7 @@ const LandsRow = ({zoneName}: LandsRowProps) => (
           min={0}
           onChange={app._emit("land", zoneName, color)}
           type='number'
-          value={app.state.gameState.getLandDistribution(zoneName, color) || 0}/>
+          value={app.state.gameState.getLandDistribution(zoneName, color as ColorSign)}/>
       </td>)}
   </tr>
 );

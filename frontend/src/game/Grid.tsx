@@ -14,6 +14,7 @@ import { DraftState } from "./v5/Canvas";
 interface GridProps {
   zones: Array<keyof DraftState>;
 }
+/** @deprecated */
 export const Grid = ({zones}: GridProps) => (
   <div>
     {zones.map(zone)}

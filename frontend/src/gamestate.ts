@@ -9,8 +9,7 @@ import _set from 'lodash/set';
 import _isEqual from 'lodash/isEqual'
 import { EventEmitter } from 'events';
 import { Zone } from './zones';
-import { BASIC_LANDS_BY_COLOR_SIGN } from './basiclands';
-import { Card, CardId } from 'common/src/types/card';
+import { Card, CardId, ColorSign } from 'common/src/types/card';
 import { withSort, DraftState, SortType } from 'common/src/types/game';
 import { app } from './router';
 
@@ -33,12 +32,12 @@ import { app } from './router';
     'side-main',
 ];
 
-export const COLORS_TO_LANDS_NAME = {
-  'W': 'Plains',
-  'U': 'Island',
-  'B': 'Swamp',
-  'R': 'Mountain',
-  'G': 'Forest',
+export const COLORS_TO_LANDS_NAME: Record<ColorSign, string> = {
+  W: 'Plains',
+  U: 'Island',
+  B: 'Swamp',
+  R: 'Mountain',
+  G: 'Forest',
 };
 
 type ZoneState = Record<Zone, Card[]>;
@@ -87,12 +86,36 @@ type CardState = { [key: string]: keyof DraftState };
  * @example { 'main': {'W': 2, 'R': 3}, 'side': {'B': 5, 'U': 5} }
  */
 const defaultLandDistribution = (): LandDistributionState => ({
-  main: {},
-  side: {},
-  pack: {},
-  burn: {}
+  main: {
+    W: 0,
+    U: 0,
+    B: 0,
+    R: 0,
+    G: 0,
+  },
+  side: {
+    W: 0,
+    U: 0,
+    B: 0,
+    R: 0,
+    G: 0,
+  },
+  pack: {
+    W: 0,
+    U: 0,
+    B: 0,
+    R: 0,
+    G: 0,
+  },
+  burn: {
+    W: 0,
+    U: 0,
+    B: 0,
+    R: 0,
+    G: 0,
+  }
 });
-type LandDistributionState = { [key in keyof DraftState]: {[ley: string]: number } }
+type LandDistributionState = Record<keyof DraftState, Record<ColorSign, number>>
 
 /**
  * @desc contains the cards in all zone, the pick + burn references and the land distributions
@@ -102,7 +125,7 @@ export class GameState extends EventEmitter {
   private cardState: CardState;
   private zoneState: ZoneState;
   public draftState: withSort<Card>;
-  private landDistribution: LandDistributionState;
+  public landDistribution: LandDistributionState;
   private pickCardIds: CardId[];
   private burnCardIds: CardId[];
   private picksPerPack: number = 0;
@@ -159,9 +182,11 @@ export class GameState extends EventEmitter {
     console.log(JSON.stringify(card));
     const zone = this.draftState.state[zoneName];
     zone[Math.min(card.cmc, zone.length - 1)].items.push(card);
+    // This will need to be understood at some point
     if (card.cardId) {
       this.cardState[card.cardId] = zoneName;
     }
+    this.updState();
   }
 
   moveCard(
@@ -205,36 +230,18 @@ export class GameState extends EventEmitter {
     }
   }
 
-  getLandDistribution(zoneName: keyof DraftState, color: string) {
+  getLandDistribution(zoneName: keyof DraftState, color: ColorSign) {
     return this.landDistribution[zoneName][color] ?? 0;
   }
 
-  _setLands(zoneName: keyof DraftState, card: Card, n: number) {
-    // TODO: Refactor to use DraftState
-    // const zone = this.get(zoneName);
-    // remove(zone, (c) => c.name === card.name);
-    // add n land
-    // range(n).forEach(() => zone.push(card));
-    // this.landDistribution[zoneName][card.colorIdentity[0]] = n;
-  }
-
-  setLands(zoneName: Zone, color: string, n: number) {
-    // this._setLands(zoneName, BASIC_LANDS_BY_COLOR_SIGN[color], n);
+  setLands(zoneName: keyof DraftState, color: ColorSign, n: number) {
+    this.landDistribution[zoneName][color] = n;
     this.updState();
   }
 
   resetLands() {
-    // TODO: Refactor to use DraftState
-    // Object.values(COLORS_TO_LANDS_NAME).forEach((basicLandName) => {
-    //   Object.forEach((zoneName: keyof DraftState) => {
-    //     this.draftState.state[zoneName].forEach((col) => {
-    //       remove(, ({name}) => basicLandName.toLowerCase() === name.toLowerCase());
-    //     })
-    //   });
-      
-    // });
-    // this.landDistribution = defaultLandDistribution();
-    // this.updState();
+    this.landDistribution = defaultLandDistribution();
+    this.updState();
   }
 
   getSortedZone(zoneName: keyof DraftState, sort: SortType) {

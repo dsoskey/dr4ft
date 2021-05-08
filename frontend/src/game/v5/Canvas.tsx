@@ -162,19 +162,20 @@ export const Canvas = () => {
         <DragDropContext onDragEnd={onDragEnd}>
             <div className='draft-container'>
                 <div className='primary-frame'>
-                    <fieldset className='pack-container fieldset'>
-                        <legend className='legend'>Pack {app.state.round} | Pick {app.state.pickNumber + 1} / {Math.ceil(app.state.packSize / app.state.picksPerPack)}</legend>
-                        {!app.didGameStart() && !app.isGameFinished() && <div>Waiting to start the game</div>}
-                        {app.didGameStart() && draftState.state.pack[0] && (
-                            <DroppableContainer isDropDisabled droppableId={`column-pack-0`} direction='horizontal' className='pack'>
-                                <CardList cards={draftState.state.pack[0].items} column='0' zone='pack' />
-                            </DroppableContainer>
-                        )}
-                        {app.didGameStart() && !draftState.state.pack[0] && <div>Waiting for next pack!</div>}
-                    </fieldset>
-                    
+                    {!app.isGameFinished() && (
+                        <fieldset className='pack-container fieldset'>
+                            <legend className='legend'>Pack {app.state.round} | Pick {app.state.pickNumber + 1} / {Math.ceil(app.state.packSize / app.state.picksPerPack)}</legend>
+                            {!app.didGameStart() && !app.isGameFinished() && <div>Waiting to start the game</div>}
+                            {app.didGameStart() && draftState.state.pack[0] && (
+                                <DroppableContainer isDropDisabled droppableId={`column-pack-0`} direction='horizontal' className='pack'>
+                                    <CardList cards={draftState.state.pack[0].items} column='0' zone='pack' />
+                                </DroppableContainer>
+                            )}
+                            {app.didGameStart() && !draftState.state.pack[0] && <div>Waiting for next pack!</div>}
+                        </fieldset>
+                    )}
                     <fieldset className='main-container fieldset'>
-                        <legend className='legend'>Main deck</legend>
+                        <legend className='legend'>Main deck | {app.state.gameState.draftState.state.main.flatMap((i) => i.items).length}</legend>
                         {Object.values(draftState.state.main).map((column, index) => (
                             <div className='column-container' key={column.id}>
                                 <div>{column.items.length}</div>

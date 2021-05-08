@@ -1,12 +1,14 @@
 :root {
   --card-width: 180px;
   --card-height: 255px;
+  --card-border-radius: 10px;
   --background-primary: #333;
   --background-secondary: #444;
   --foreground-primary: #ee82ee;
   --foreground-secondary: aquamarine;
   --foreground-tertiary: #089dff;
   --foreground-contrast: #222;
+  --foreground-white: #fff;
 }
 
 #root {

@@ -91,9 +91,9 @@
     background-color: burlywood;
 }
 .faux-card {
-    background-color: royalblue;
+    background-color: var(--foreground-tertiary);
     height: var(--card-height);
     width: var(--card-width);
     margin: 10px;
-    border-radius: 8px;
+    border-radius: var(--card-border-radius);
 }

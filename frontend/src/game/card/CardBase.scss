@@ -40,11 +40,11 @@
   height: calc(var(--card-height) - 10px);
   // 10px = 2* (padding + border)
 
-  background: #fff;
+  background: hsl(225, 73%, 57%);
   font-size: 16px;
   padding: 4px;
   border: 1px solid #555;
-  border-radius: 6px;
+  border-radius: var(--card-border-radius);
 
   display: grid;
   grid-template-rows: auto auto 1fr;
@@ -71,7 +71,7 @@
   }
 
   .sub-header {
-    background: #eee;
+    background: hsl(240, 73%, 57%);
     border-radius: 4px;
 
     .type {}
@@ -94,8 +94,8 @@
 
     .power-toughness, .loyalty {
       padding: 1px 4px;
-      background: #eee;
-      border: 1px solid #ddd;
+      background:  hsl(240, 73%, 57%);
+      border: 1px solid hsl(250, 73%, 57%);
       border-radius: 6px;
     }
   }
@@ -111,5 +111,6 @@
     height: var(--card-height);
     max-width: var(--card-width);
     max-height: var(--card-height);
+    border-radius: var(--card-border-radius);
   }
 }
