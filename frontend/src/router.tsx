@@ -31,6 +31,7 @@ function route() {
     app.state.gameId = id;
     app.initGameState(id);
     app.state.players = [];
+    // TODO: only join if query param is there
     app.send('join', id);
     app.once('gameInfos', app.updateGameInfos);
     component = <Game id={ id } />;

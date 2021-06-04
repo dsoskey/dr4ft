@@ -16,14 +16,21 @@ import {vanillaToast} from "vanilla-toast";
 import "vanilla-toast/vanilla-toast.css";
 import { Zone } from "../zones";
 import { Canvas } from "./v5/Canvas";
+import { Modal } from "../components/Modal";
 
 interface GameProps {
   id: string;
 }
-export default class Game extends Component<GameProps> {
+interface GameState {
+  openModal: 'closed' | 'settings' | 'players';
+}
+export default class Game extends Component<GameProps, GameState> {
   constructor(props: GameProps) {
     super(props);
     app.register(this);
+    this.state = {
+      openModal: 'closed',
+    }
   }
 
   leaveGame() {
@@ -45,37 +52,46 @@ export default class Game extends Component<GameProps> {
   }
 
   render() {
+    let modalChild = null;
+    let modalHeader = '';
+    switch (this.state.openModal) {
+      case 'settings':
+        modalChild = <GameSettings/>;
+        modalHeader = 'Settings';
+        break;
+      case 'players':
+        modalChild = <PlayersPanel/>;
+        modalHeader= `Players (${app.state.numPlayers}/${app.state.gameSeats})`;
+        break;
+    }
+
     return (
       <div className='container'>
         <audio id='beep' src='/media/beep.wav'/>
         <div className='game'>
-          <div className='game-controls'>
-            <div className='game-status'>
-              <PlayersPanel/>
-              <StartPanel/>
-            </div>
-            <DeckSettings/>
-            <GameSettings/>
+          <div className='menu-bar'>
+            <button onClick={() => this.setState({openModal: 'settings'})}>Settings</button>
+            {app.didGameStart() && <button onClick={() => this.setState({openModal: 'players'})}>Players</button>}
           </div>
-          <Canvas />
+          <div className='game-controls'>
+            <StartPanel/>
+            {!app.didGameStart() && <PlayersPanel/>}
+            {app.isGameFinished() && <DeckSettings/>}
+          </div>
+          {app.didGameStart() && <Canvas />}
         </div>
         {app.state.chat && <Chat/>}
+        {this.state.openModal !== 'closed' && (
+          <Modal
+            headerText={modalHeader}
+            show
+            onClose={() => this.setState({openModal: 'closed'})}
+            onConfirm={() => this.setState({openModal: 'closed'})}
+          >
+            {modalChild}
+          </Modal>
+        )}
       </div>
     );
   }
 }
-
-const CardsZone = () => {
-  const pack = !app.isGameFinished() && app.didGameStart()
-    ? <Grid key={"pack"} zones={[Zone.pack]} />
-    : <div key={"pack"}/>;
-
-  const props = { zones: [Zone.main, Zone.side, Zone.junk] };
-  const pool = app.state.cols
-    ? <Cols key={"pool"} {...props}/>
-    : <Grid key={"pool"} {...props} />;
-
-  return <>{!app.state.hidepicks || app.isGameFinished()
-    ? [pack, pool]
-    : [pack]}</>;
-};

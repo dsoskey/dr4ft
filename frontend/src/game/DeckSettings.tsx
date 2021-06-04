@@ -42,7 +42,7 @@ const LandsPanel = () => (
         <tr>
           <td colSpan={4}></td>
           <td colSpan={2}>
-            <button className='land-suggest-button' onClick={app._emit('addLandsToPool')}>
+            <button className='primary land-suggest-button' onClick={app._emit('addLandsToPool')}>
               Add Lands</button>
           </td>
         </tr>

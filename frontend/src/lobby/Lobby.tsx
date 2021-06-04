@@ -9,6 +9,7 @@ import { NewsPanel } from './NewsPanel';
 import { CreatePanel } from './CreatePanel';
 import FileUpload from './FileUpload';
 import { Version } from './Version';
+import { TabSet } from '../components/TabSet';
 
 interface LobbyProps {}
 
@@ -27,10 +28,17 @@ export default class Lobby extends Component {
         <div className='lobby'>
           <div className='lobby-header-container'>
             <Header/>
-            <CreatePanel/>
           </div>
-          <JoinPanel roomInfo={roomInfo}/>
-          <FileUpload />
+          <TabSet tabs={[
+            {
+              id: 'Join a room',
+              content: <JoinPanel roomInfo={roomInfo}/>,
+            },
+            {
+              id: 'Create a game',
+              content: <CreatePanel/>,
+            }
+          ]} />
           <NewsPanel motd={STRINGS.PAGE_SECTIONS.MOTD}/>
           {STRINGS.BRANDING.PAYPAL}
           {STRINGS.PAGE_SECTIONS.FOOTER}

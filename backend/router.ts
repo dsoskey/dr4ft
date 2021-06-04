@@ -18,7 +18,7 @@ function create(this: Sock, opts: GameOptions) {
 
   const g = new Game({ ...opts, hostId: this.id });
   logger.info(`user ${this.name} created a game with id ${g.id}`);
-  this.send("route", `g/${g.id}`);
+  this.send("route", `g/${g.id}`); // IDEA: use query param to autojoin host
   logger.info('sent route');
 }
 

@@ -1,4 +1,6 @@
 import React from "react";
+import { Spaced } from "../components/Spaced";
+import { app } from "../router";
 
 interface RoomInfo {
   id: string;
@@ -13,10 +15,9 @@ interface JoinPanelProps {
 }
 export const JoinPanel = ({roomInfo}: JoinPanelProps) => {
   return (
-    <fieldset className='fieldset'>
-      <legend className='legend'>Join a Room</legend>
-      {roomInfo.length
-        ? <table className='join-room-table'>
+    <>
+      <ServerInfo />
+      {roomInfo.length > 0 && (<table className='join-room-table'>
           <thead>
             <tr>
               <th>Name</th>
@@ -40,7 +41,25 @@ export const JoinPanel = ({roomInfo}: JoinPanelProps) => {
             </tr>)}
           </tbody>
         </table>
-        : "There are no public rooms open currently."}
-    </fieldset>
+      )}
+    </>
   );
+};
+
+const ServerInfo = () => {
+  const { numUsers, numPlayers, numActiveGames } = app.state;
+  const users = `${numUsers} ${numUsers === 1
+    ? "user"
+    : "users"} connected`;
+
+  const players = `${numPlayers}
+     ${numPlayers === 1
+    ? "player"
+    : "players"}
+      playing ${numActiveGames}
+        ${numActiveGames === 1
+    ? "game"
+    : "games"}`;
+
+  return <p><Spaced elements={[users, players]} /></p>;
 };

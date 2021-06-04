@@ -2,9 +2,9 @@ import React from "react";
 
 export const STRINGS = {
   BRANDING: {
-    SITE_TITLE: ["dr5ft", "info"].join("."),
-    SITE_NAME: <span>DR<img src='4.png' alt='4'/>FT</span>,
-    DEFAULT_USERNAME: "dr5fter",
+    SITE_TITLE: ["drVft", "info"].join("."),
+    SITE_NAME: <span>dr<span className='branding-v'>V</span>ft</span>,
+    DEFAULT_USERNAME: "drVfter",
     PAYPAL: "",
   },
 

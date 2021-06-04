@@ -4,14 +4,13 @@ import React, {Component} from "react";
 import { app } from "../router";
 
 export const PlayersPanel = () => (
-  <fieldset className='fieldset'>
-    <legend className='legend game-legend'>Players ({app.state.numPlayers}/{app.state.gameSeats})</legend>
+  <div>
     <PlayersTable />
     <div id='self-time-fixed' hidden>
       <u>Time Left</u>
       <div id='self-time-fixed-time' />
     </div>
-  </fieldset>
+  </div>
 );
 
 const PlayersTable = () => (

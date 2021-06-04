@@ -6,29 +6,24 @@ import "./GameSettings.scss";
 
 export const GameSettings = () => (
   <div className='GameSettings'>
-    <fieldset className='fieldset'>
-      <legend className='legend game-legend'>Settings</legend>
-      <span>
-        {/* {!app.isSealed() &&
-          <Checkbox side="left" text="Enable notifications on new packs" link="beep" />
-        }
-        {!app.isSealed() &&
-          <div style={{paddingLeft: "10px"}} >
-            <Checkbox side="left"
-              text={app.notificationBlocked() ? "Web notifications blocked in browser" : "Use desktop notifications over beep"}
-              link="notify"
-              disabled={!app.state.beep || app.notificationBlocked()}
-              onChange={app._emit("notification")} />
-          </div>
-        } */}
-        {/* {!app.isSealed() &&
-          <Checkbox side="left" text="Hide your picks" link="hidepicks" />
-        } */}
-        {/* <SortCards /> */}
-        <CardsImageQuality />
-        {app.state.cardSize != "text" && <CardsImageLanguage />}
-      </span>
-    </fieldset>
+    {/* {!app.isSealed() &&
+      <Checkbox side="left" text="Enable notifications on new packs" link="beep" />
+    }
+    {!app.isSealed() &&
+      <div style={{paddingLeft: "10px"}} >
+        <Checkbox side="left"
+          text={app.notificationBlocked() ? "Web notifications blocked in browser" : "Use desktop notifications over beep"}
+          link="notify"
+          disabled={!app.state.beep || app.notificationBlocked()}
+          onChange={app._emit("notification")} />
+      </div>
+    } */}
+    {/* {!app.isSealed() &&
+      <Checkbox side="left" text="Hide your picks" link="hidepicks" />
+    } */}
+    {/* <SortCards /> */}
+    <CardsImageQuality />
+    {app.state.cardSize != "text" && <CardsImageLanguage />}
   </div>
 );
 

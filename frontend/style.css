@@ -2,17 +2,34 @@
   --card-width: 180px;
   --card-height: 255px;
   --card-border-radius: 10px;
-  --background-primary: #333;
-  --background-secondary: #444;
-  --foreground-primary: #ee82ee;
+  --background-primary: #222;
+  --background-secondary: #333;
+  --foreground-primary: hsl(300, 94%, 67%);
   --foreground-secondary: aquamarine;
-  --foreground-tertiary: #089dff;
-  --foreground-contrast: #222;
+  --foreground-tertiary: hsl(192, 100%, 55%);
+  --foreground-contrast: #111;
   --foreground-white: #fff;
 }
 
 #root {
   height: 100%;
+}
+
+/* 
+.branding-v {
+  animation: vFade 20000ms linear infinite;
+} */
+
+@keyframes vFade {
+  0% {
+    color: var(--foreground-primary);
+  }
+  50% {
+    color: var(--foreground-tertiary);
+  }
+  100% {
+    color: var(--foreground-primary);
+  }
 }
 
 .outer {
@@ -55,16 +72,50 @@ body {
   height: 100%;
 }
 
+@keyframes backgroundFade {
+  0% {
+    background-color: var(--background-primary);
+  }
+  50% {
+    background-color: var(--foreground-tertiary);
+  }
+  100% {
+    background-color: var(--background-primary);
+  }
+}
+
+@keyframes borderFade {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 50% 50%;
+  }
+  100% {
+    background-position: 100% 50%;
+  }
+}
+
 body {
   background-color: var(--background-primary);
   color: var(--foreground-primary);
   font-family: 'Helvetica', 'Arial';
   font-size: 16px;
+  background: linear-gradient(
+    to right,
+    var(--foreground-tertiary),
+    var(--foreground-primary),
+    var(--foreground-tertiary),
+    var(--foreground-primary)
+  );
+  background-size: 300% 100%;
+  animation: borderFade 20000ms linear infinite;
 }
+
+
 
 h1 {
   font-family: 'Montserrat', 'Arial', sans-serif;
-  text-transform: uppercase;
 }
 
 h2 {
@@ -96,7 +147,14 @@ time {
   background-color:  var(--background-secondary);
   border-radius: 3px;
   border: solid var(--foreground-secondary) 1px;
-  box-shadow: -1px -3px var(--foreground-tertiary);
+  border-image: linear-gradient(
+    to right,
+    var(--foreground-tertiary),
+    var(--foreground-primary),
+    var(--foreground-tertiary),
+    var(--foreground-primary)
+  );
+  border-image-size: 300% 100%;
   line-height: 20px;
   padding: 10px;
 }
@@ -125,12 +183,15 @@ select {
   padding: 3px;
 }
 
+button {
+  border: 0;
+}
+
 input[type=button],
 .uploadFile,
-button,
 input[type=text],
 textarea {
-  border: solid #d0d0d0 1px;
+  border: solid var(--foreground-primary) 1px;
 }
 
 input[type=button],
@@ -140,17 +201,15 @@ button {
   color: var(--foreground-contrast);
   padding: 5px;
 }
+button:hover {
+  background: linear-gradient( var(--foreground-tertiary), var(--foreground-primary));
+}
 
 button.primary {
   background-color: var(--foreground-secondary);
 }
-
-input[type=button]:hover,
-.uploadFile:hover,
-button:hover,
-input[type=text]:hover,
-textarea:hover {
-  border-color: #909090;
+button.primary:hover {
+  background: linear-gradient( var(--foreground-secondary), var(--foreground-primary));
 }
 
 input[type=button]:active,
@@ -276,8 +335,8 @@ input[type="checkbox"], input[type="radio"] {
 
 .container {
   box-sizing: border-box;
-  height: 100%;
-  padding: 30px 0 30px 30px;
+  /* height: 100%; */
+  /* padding: 0px 0 30px 30px; */
   display: flex;
   flex-direction: row;
 }
@@ -296,6 +355,7 @@ input[type="checkbox"], input[type="radio"] {
 .lobby {
   flex-grow: 1;
   margin: 0 auto;
+  padding-left: 30px;
   padding-right: 30px;
 
   display: flex;
@@ -315,6 +375,7 @@ input[type="checkbox"], input[type="radio"] {
 .lobby-header {
   font-size: 40px;
   height: 40px;
+  animation: vFade 20000ms linear infinite;
 }
 
 .spacer-dot:after {
@@ -524,7 +585,6 @@ input[type="checkbox"], input[type="radio"] {
 
 .game {
   flex-grow: 1;
-  padding-right: 30px;
 }
 
 .game-controls {
@@ -545,6 +605,23 @@ input[type="checkbox"], input[type="radio"] {
 
 .game-status {
   margin-right: 30px;
+}
+
+.menu-bar {
+  position: sticky;
+  top: 0px;
+  display: flex;
+  flex-direction: row-reverse;
+  z-index: 100;
+  background: linear-gradient(var(--background-secondary) 80%, var(--foreground-primary));
+}
+.menu-bar > * {
+  margin-top: 10px;
+  margin-left: 5px;
+  margin-bottom: 15px;
+}
+.menu-bar > :first-child {
+  margin-right: 10px;
 }
 
 .land-suggest-button {
@@ -620,7 +697,7 @@ input[type="checkbox"], input[type="radio"] {
   height: 150px;
 }
 
-/* Modal Styles */
+/* Modal & Create Panel Styles */
 .modal-outer-container {
   position: fixed;
   top: 0;
@@ -662,16 +739,22 @@ input[type="checkbox"], input[type="radio"] {
   box-shadow: 0 3px 7px rgba(0, 0, 0, 0.3);
 }
 
-.modal-container a, .modal-container a:visited {
+.create-container {
+  color: var(--foreground-primary);
+  max-height: 90%;
+  overflow-y: auto;
+}
+
+:is(.modal-container, .create-container) :is(a, a:visited) {
   color: #079DFF;
 }
 
-.modal-container fieldset {
+:is(.modal-container, .create-container) fieldset {
   padding: 0;
   border: 0;
 }
 
-.modal-container input, .modal-container textarea, .modal-container select {
+:is(.modal-container, .create-container) :is(input, textarea, select) {
   background: var(--background-secondary);
   color: var(--foreground-secondary);
   border-color: var(--foreground-secondary);
@@ -680,17 +763,17 @@ input[type="checkbox"], input[type="radio"] {
   margin-bottom: 10px;
 }
 
-.modal-container input:focus, .modal-container textarea:focus, .modal-container select:focus {
+:is(.modal-container, .create-container) :is(input:focus, textarea:focus, select:focus) {
   outline: none;
   border-color: #079DFF;
 }
 
-.modal-container input.error, .modal-container textarea.error, .modal-container select.error {
+:is(.modal-container, .create-container) :is(input.error, textarea.error, select.error) {
   border-color: #E15252;
   color: #E15252;
 }
 
-.modal-container select {
+:is(.modal-container, .create-container) select {
   padding: 12px 30px 12px 12px;
   -moz-appearance: none;
   -webkit-appearance: none;
@@ -701,7 +784,7 @@ input[type="checkbox"], input[type="radio"] {
   background-size: .65em auto, 100%;
 }
 
-.modal-container input::placeholder { /* Chrome, Firefox, Opera, Safari 10.1+ */
+:is(.modal-container, .create-container) input::placeholder { /* Chrome, Firefox */
   color: #868788;
   opacity: 1; /* Firefox */
 }
@@ -749,7 +832,7 @@ input[type="checkbox"], input[type="radio"] {
   font-size: 1.25rem;
 }
 
-.modal-container button {
+:is(.modal-container, .create-container) button {
   display: inline-block;
   border: 1px solid #586069;
   padding: 1rem 2rem;
@@ -760,24 +843,19 @@ input[type="checkbox"], input[type="radio"] {
   font-family: sans-serif;
   cursor: pointer;
   text-align: center;
-  transition: background 250ms ease-in-out, 
-  transform 150ms ease;
+  /* transition: background 250ms ease-in-out,  */
+  /* transform 150ms ease; */
   -webkit-appearance: none;
   -moz-appearance: none;
 }
 
-.modal-container button:focus {
-  outline: 1px solid #079DFF;
+:is(.modal-container, .create-container) button:focus {
+  /* outline: 1px solid #079DFF; */
   outline-offset: -2px;
 }
 
-.modal-container button:active {
+:is(.modal-container, .create-container) button:active {
   transform: scale(0.99);
-}
-
-.modal-container button.primary {
-  color: #079DFF;
-  border-color: #079DFF;
 }
 
 .modal-body {

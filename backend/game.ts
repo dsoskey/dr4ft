@@ -59,7 +59,7 @@ export class Game extends Room {
   private packCount: number = 1;
   pool: any;
 
-  
+  // TODO: add host socket for communication with non-player host.
   constructor({ hostId, title, seats, type, sets, cube, isPrivate, modernOnly, totalChaos, chaosPacksNumber, picksPerPack }: GameProps) {
     super({ isPrivate });
 

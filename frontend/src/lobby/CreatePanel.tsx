@@ -65,100 +65,106 @@ const CreateRoomModal = () => {
         app.emit("create")
       }}
     >
-      <ModalSection
-        label="Title"
-        inputId="game-title-input"
-      >
-        <input type='text'
-          ref={draftNameInput}
-          id="game-title-input"
-          placeholder="Game Room Name"
-          value={title}
-          onChange={(e) => app.save("title", e.currentTarget.value)}
-        />
-        <div>
-          <span className='connected-container'>
-            <RadioOptions
-              name="type"
-              description="Game type"
-              appProperty="gametype"
-              options={gameTypes.map(type => {
-                return {
-                  label: _.toTitleCase(type),
-                  value: type
-                };
-              })}
-              onChange={() => {
-                // always change back to the default when updating main
-                // game type
-                app.save("gamesubtype", "regular");
-              }}
-            />
-          </span>
-        </div>
-      </ModalSection>
-      <ModalSection
-        label="Players"
-        inputId="game-players-input"
-      >
-        <select id="game-players-input" value={seats} onChange={(e) => {app.save("seats", e.currentTarget.value);}}>
-          {_.seq(100, 1).map((x: number, i: number) =>
-            <option key={i}>{x}</option>)}
-        </select>
-        <RadioOptions
-          name="public-private"
-          description="Create a public or private game"
-          appProperty="isPrivate"
-          options={[{
-            label: "Public",
-            value: false,
-            tooltip: "Anyone can join"
-          }, {
-            label: "Private",
-            value: true,
-            tooltip: "A link is required to join"
-          }]}
-        />
-      </ModalSection>
-      <ModalSection
-        label="Type"
-        inputId="game-type-input"
-      >
-        <GameTypes/>
-      </ModalSection>
-      <ModalSection
-        label="Packs"
-        inputId="game-packs-input"
-      >
-        <GameOptions/>
-      </ModalSection>
-      {/* TODO This probably needs a better design, but for now, just show all app errors here since most of them at this stage will be about the room setup failing */}
-      <ModalSection
-        hide={!app.err}
-        label="Error"
-      >
-        <p dangerouslySetInnerHTML={{__html: app.err}} className='error' />
-      </ModalSection>
+      
     </Modal>
   );
 };
 
 export const CreatePanel = () => {
   createModalButtonRef = useRef(null);
+  const draftNameInput = useRef<HTMLInputElement | null>(null);
+  const {title, seats} = app.state;
+  const gameTypes = ["draft", "sealed"];
 
   return (
-    <fieldset className='fieldset'>
-      <legend className='legend'>
-        Create a Room
-      </legend>
-      <CreateRoomModal />
-      <p>
-        <button ref={createModalButtonRef} onClick={e => {
-          showModal();
-        }}>
+    <div className='create-container'>
+      <div className='create-body'>
+        <ModalSection
+          label="Title"
+          inputId="game-title-input"
+        >
+          <input type='text'
+            ref={draftNameInput}
+            id="game-title-input"
+            placeholder="Game Room Name"
+            value={title}
+            onChange={(e) => app.save("title", e.currentTarget.value)}
+          />
+          <div>
+            <span className='connected-container'>
+              <RadioOptions
+                name="type"
+                description="Game type"
+                appProperty="gametype"
+                options={gameTypes.map(type => {
+                  return {
+                    label: _.toTitleCase(type),
+                    value: type
+                  };
+                })}
+                onChange={() => {
+                  // always change back to the default when updating main
+                  // game type
+                  app.save("gamesubtype", "regular");
+                }}
+              />
+            </span>
+          </div>
+        </ModalSection>
+        <ModalSection
+          label="Players"
+          inputId="game-players-input"
+        >
+          <select id="game-players-input" value={seats} onChange={(e) => {app.save("seats", e.currentTarget.value);}}>
+            {_.seq(100, 1).map((x: number, i: number) =>
+              <option key={i}>{x}</option>)}
+          </select>
+          <RadioOptions
+            name="public-private"
+            description="Create a public or private game"
+            appProperty="isPrivate"
+            options={[{
+              label: "Public",
+              value: false,
+              tooltip: "Anyone can join"
+            }, {
+              label: "Private",
+              value: true,
+              tooltip: "A link is required to join"
+            }]}
+          />
+        </ModalSection>
+        <ModalSection
+          label="Type"
+          inputId="game-type-input"
+        >
+          <GameTypes/>
+        </ModalSection>
+        <ModalSection
+          label="Packs"
+          inputId="game-packs-input"
+        >
+          <GameOptions/>
+        </ModalSection>
+        {/* TODO This probably needs a better design, but for now, just show all app errors here since most of them at this stage will be about the room setup failing */}
+        <ModalSection
+          hide={!app.err}
+          label="Error"
+        >
+          <p dangerouslySetInnerHTML={{__html: app.err}} className='error' />
+        </ModalSection>
+      </div>
+      <div className='create-footer'>
+        <button
+          className='primary'
+          ref={createModalButtonRef}
+          onClick={() => {
+            console.log('Creating game');
+            app.emit("create")
+          }}>
           Create Room
         </button>
-      </p>
-    </fieldset>
+      </div>
+    </div>
   );
 };

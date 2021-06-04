@@ -1,6 +1,8 @@
 .draft-container {
-    width: 100%;
-    height: 100%;
+    /* width: 100%; */
+    /* height: 100%; */
+    display:flex;
+     flex-direction: row;
 }
 
 .primary-frame {
@@ -56,7 +58,7 @@
 .drawer {
     top: 0;
     right: 0;
-    position: absolute;
+    position: sticky;
     background-color: transparent;
     z-index: 20;
     display: flex;

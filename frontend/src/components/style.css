@@ -1,0 +1,17 @@
+.tab-selectors {
+    display: flex;
+    flex-direction: row;
+}
+
+.tab-selectors .tab-button:not(:first-child) {
+    margin-left: 10px;
+}
+
+.tab-selectors .tab-button:not(.selected) {
+    cursor: pointer;
+}
+.tab-selectors .tab-button.selected {
+    color: var(--foreground-secondary);
+    background-color: var(--background-primary);
+}
+
